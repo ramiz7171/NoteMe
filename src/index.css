@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* highlight.js dark mode overrides */
+.dark pre code.hljs {
+  background: transparent;
+  color: #e5e7eb;
+}
+
+.dark .hljs-keyword { color: #c084fc; }
+.dark .hljs-string { color: #86efac; }
+.dark .hljs-number { color: #fdba74; }
+.dark .hljs-comment { color: #6b7280; }
+.dark .hljs-function { color: #93c5fd; }
+.dark .hljs-title { color: #93c5fd; }
+.dark .hljs-built_in { color: #fca5a5; }
+.dark .hljs-type { color: #fde68a; }
+.dark .hljs-attr { color: #fdba74; }
+.dark .hljs-variable { color: #e5e7eb; }
+.dark .hljs-params { color: #e5e7eb; }
