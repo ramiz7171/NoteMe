@@ -89,13 +89,14 @@ function getInitialContent(note: Note | null, isNew: boolean): string {
   return c.split('\n').map((line) => `<p>${escapeHtml(line) || '<br>'}</p>`).join('')
 }
 
-export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete, noTitleIndex, tabTitle, onTitleChange }: Props) {
+export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _onDelete, noTitleIndex, tabTitle, onTitleChange }: Props) {
   const [title, setTitle] = useState(note?.title ?? '')
   const [noteType, setNoteType] = useState<NoteType>(note?.note_type ?? 'basic')
   const [saving, setSaving] = useState(false)
   const [hasContent, setHasContent] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedRef = useRef(false)
+  const lastSavedContentRef = useRef<string | null>(null)
   const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex })
 
   const handleAutoSave = useCallback((t: string, c: string, nt: NoteType) => {
@@ -107,6 +108,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete, no
       if (c !== note.content) updates.content = c
       if (nt !== note.note_type) updates.note_type = nt
       if (Object.keys(updates).length > 0) {
+        lastSavedContentRef.current = c
         setSaving(true)
         await onUpdate(note.id, updates)
         setSaving(false)
@@ -168,11 +170,16 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete, no
     latestRef.current.content = editor.getHTML()
   }
 
-  // Sync external note changes
+  // Sync external note changes (from other tabs/sessions only)
   useEffect(() => {
     if (note && !isNew && editor) {
       setTitle(note.title)
       setNoteType(note.note_type)
+      // Skip if this is our own save echoing back via realtime
+      if (lastSavedContentRef.current !== null && note.content === lastSavedContentRef.current) {
+        lastSavedContentRef.current = null
+        return
+      }
       const currentHtml = editor.getHTML()
       const noteContent = getInitialContent(note, false)
       if (noteContent !== currentHtml && note.content !== currentHtml) {
@@ -245,10 +252,6 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete, no
     if (!isNew && note && editor) handleAutoSave(title, editor.getHTML(), val)
   }
 
-  const handleDelete = async () => {
-    if (note) await onDelete(note.id)
-  }
-
   const handleManualSave = async () => {
     if (!editor) return
     const html = editor.getHTML()
@@ -300,10 +303,24 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete, no
           )}
           {!isNew && note && (
             <button
-              onClick={handleDelete}
-              className="px-3 py-1.5 text-sm bg-black dark:bg-white text-white dark:text-black rounded-xl hover:opacity-90 transition-colors"
+              onClick={() => {
+                if (!editor || !note) return
+                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+                const html = editor.getHTML()
+                const updates: { title?: string; content?: string; note_type?: NoteType } = {}
+                if (title !== note.title) updates.title = title || `No title ${noTitleIndex}`
+                if (html !== note.content) updates.content = html
+                if (noteType !== note.note_type) updates.note_type = noteType
+                if (Object.keys(updates).length > 0) {
+                  lastSavedContentRef.current = html
+                  setSaving(true)
+                  onUpdate(note.id, updates).then(() => setSaving(false))
+                }
+              }}
+              disabled={saving}
+              className="px-3 py-1.5 text-sm bg-black dark:bg-white text-white dark:text-black rounded-xl hover:opacity-90 disabled:opacity-50 transition-colors"
             >
-              Discard
+              Save
             </button>
           )}
         </div>
