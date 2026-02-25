@@ -305,51 +305,50 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
             <span className="text-xs text-gray-400">Saving...</span>
           )}
           {!isNew && note && (
-            <div className="flex items-center gap-2 w-[180px] justify-end">
-              {/* Auto-save toggle */}
+            <div className="flex items-center gap-3">
+              {/* Auto-save toggle — fixed position */}
               <button
                 type="button"
                 onClick={() => setAutoSave(prev => !prev)}
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
                 title={autoSave ? 'Auto-save is on' : 'Auto-save is off'}
               >
-                <div className={`relative w-7 h-4 rounded-full transition-colors ${autoSave ? 'bg-[var(--accent)]' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                <div className={`relative w-7 h-4 rounded-full transition-colors ${autoSave ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-300 dark:bg-gray-600'}`}>
                   <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${autoSave ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                 </div>
-                <span className={`whitespace-nowrap ${autoSave ? 'text-[var(--accent)]' : 'text-gray-500 dark:text-gray-400'}`}>
+                <span className={`whitespace-nowrap ${autoSave ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
                   {autoSave ? 'Auto save' : 'Manual'}
                 </span>
               </button>
-              {/* Save button — only in manual mode */}
-              {!autoSave && (
-                <button
-                  onClick={() => {
-                    if (!editor || !note) return
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-                    const html = editor.getHTML()
-                    const updates: { title?: string; content?: string; note_type?: NoteType } = {}
-                    if (title !== note.title) updates.title = title || `No title ${noTitleIndex}`
-                    if (html !== note.content) updates.content = html
-                    if (noteType !== note.note_type) updates.note_type = noteType
-                    if (Object.keys(updates).length > 0) {
-                      lastSavedContentRef.current = html
-                      setSaving(true)
-                      onUpdate(note.id, updates).then(() => {
-                        setSaving(false)
-                        setHasChanges(false)
-                      })
-                    }
-                  }}
-                  disabled={saving || !hasChanges}
-                  className={`px-3 py-1.5 text-sm rounded-xl transition-all ${
-                    hasChanges
-                      ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
-                      : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                  } disabled:opacity-50`}
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-              )}
+              {/* Save button — always rendered, hidden in auto mode to prevent layout shift */}
+              <button
+                onClick={() => {
+                  if (!editor || !note) return
+                  if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+                  const html = editor.getHTML()
+                  const updates: { title?: string; content?: string; note_type?: NoteType } = {}
+                  if (title !== note.title) updates.title = title || `No title ${noTitleIndex}`
+                  if (html !== note.content) updates.content = html
+                  if (noteType !== note.note_type) updates.note_type = noteType
+                  if (Object.keys(updates).length > 0) {
+                    lastSavedContentRef.current = html
+                    setSaving(true)
+                    onUpdate(note.id, updates).then(() => {
+                      setSaving(false)
+                      setHasChanges(false)
+                    })
+                  }
+                }}
+                disabled={saving || !hasChanges}
+                className={`px-3 py-1.5 text-sm rounded-xl transition-all ${
+                  autoSave ? 'invisible' :
+                  hasChanges
+                    ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
+                    : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                }`}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
             </div>
           )}
           {isNew && (
