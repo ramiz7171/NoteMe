@@ -29,7 +29,8 @@ export function useSettings() {
       setSettings(data as unknown as UserSettings)
     }
     setLoading(false)
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => { fetchSettings() }, [fetchSettings])
 

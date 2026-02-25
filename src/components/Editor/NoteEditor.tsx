@@ -338,9 +338,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           {saving && (
             <span className="text-xs text-gray-400">Saving...</span>
           )}
-          {/* Auto-save toggle — for both new and existing notes */}
-          {!isNew && (
-            <button
+          {/* Auto-save toggle */}
+          <button
               type="button"
               onClick={toggleAutoSave}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
@@ -353,15 +352,10 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
                 {autoSave ? 'Auto save' : 'Manual'}
               </span>
             </button>
-          )}
-          {/* Save button — for new notes: always visible; for existing: animated in/out */}
+          {/* Save button — animated in/out based on auto-save toggle */}
           <div
             className="overflow-hidden transition-all duration-300 ease-in-out"
-            style={
-              isNew
-                ? { maxWidth: 80, opacity: 1 }
-                : { maxWidth: autoSave ? 0 : 80, opacity: autoSave ? 0 : 1 }
-            }
+            style={{ maxWidth: autoSave ? 0 : 80, opacity: autoSave ? 0 : 1 }}
           >
             <button
               onClick={() => {

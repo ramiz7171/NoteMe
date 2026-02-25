@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../types'
@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const currentUserIdRef = useRef<string | null>(null)
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -34,14 +35,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      const u = session?.user ?? null
+      currentUserIdRef.current = u?.id ?? null
+      setUser(u)
+      if (u) fetchProfile(u.id)
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // Only clear user state on explicit sign-out, not on token refresh failures
       if (event === 'SIGNED_OUT') {
+        currentUserIdRef.current = null
         setSession(null)
         setUser(null)
         setProfile(null)
@@ -49,6 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       if (session) {
+        // Token refresh for the same user — update session silently, skip user/profile re-set
+        if (session.user.id === currentUserIdRef.current && event === 'TOKEN_REFRESHED') {
+          setSession(session)
+          return
+        }
+        currentUserIdRef.current = session.user.id
         setSession(session)
         setUser(session.user)
         fetchProfile(session.user.id)

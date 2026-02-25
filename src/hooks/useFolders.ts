@@ -18,7 +18,8 @@ export function useFolders() {
       .order('name', { ascending: true })
     if (!error && data) setFolders(data as Folder[])
     setLoading(false)
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => {
     fetchFolders()
@@ -58,7 +59,8 @@ export function useFolders() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const createFolder = async (name: string) => {
     if (!user) return

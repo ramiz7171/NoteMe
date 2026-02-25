@@ -18,7 +18,8 @@ export function useTranscripts() {
       .order('updated_at', { ascending: false })
     if (!error && data) setTranscripts(data as unknown as Transcript[])
     setLoading(false)
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => { fetchTranscripts() }, [fetchTranscripts])
 
@@ -43,7 +44,8 @@ export function useTranscripts() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const createTranscript = useCallback(async (data: {
     title: string

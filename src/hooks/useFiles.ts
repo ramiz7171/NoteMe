@@ -21,7 +21,8 @@ export function useFiles() {
       .order('position')
       .order('name')
     if (data) setFileFolders(data as unknown as FileFolder[])
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const fetchUserFiles = useCallback(async () => {
     if (!user) return
@@ -32,7 +33,8 @@ export function useFiles() {
       .order('position')
       .order('created_at', { ascending: false })
     if (data) setUserFiles(data as unknown as UserFile[])
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => {
     if (!user) return
@@ -42,7 +44,7 @@ export function useFiles() {
       setLoading(false)
     }
     load()
-  }, [user, fetchFileFolders, fetchUserFiles])
+  }, [fetchFileFolders, fetchUserFiles])
 
   // Realtime subscriptions
   useEffect(() => {
@@ -94,7 +96,8 @@ export function useFiles() {
       supabase.removeChannel(foldersChannel)
       supabase.removeChannel(filesChannel)
     }
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   // Folder CRUD
   const createFileFolder = useCallback(async (name: string, parentFolderId: string | null, color: FileFolderColor = 'blue') => {

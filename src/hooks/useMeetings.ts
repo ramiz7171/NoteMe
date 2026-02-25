@@ -18,7 +18,8 @@ export function useMeetings() {
       .order('meeting_date', { ascending: false })
     if (!error && data) setMeetings(data as unknown as Meeting[])
     setLoading(false)
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => { fetchMeetings() }, [fetchMeetings])
 
@@ -43,7 +44,8 @@ export function useMeetings() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const upcomingMeetings = useMemo(() =>
     meetings.filter(m => m.status === 'scheduled' || m.status === 'in_progress'),

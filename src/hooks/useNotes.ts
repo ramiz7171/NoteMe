@@ -20,7 +20,8 @@ export function useNotes() {
       .order('updated_at', { ascending: false })
     if (!error && data) setNotes(data as Note[])
     setLoading(false)
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => {
     fetchNotes()
@@ -59,7 +60,8 @@ export function useNotes() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const createNote = async (title: string, content: string, noteType: NoteType) => {
     if (!user) return { error: new Error('Not authenticated') }
