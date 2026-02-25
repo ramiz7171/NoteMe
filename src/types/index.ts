@@ -100,6 +100,34 @@ export interface UserSettings {
   updated_at: string
 }
 
+export type FileFolderColor = 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'gray'
+
+export interface FileFolder {
+  id: string
+  user_id: string
+  name: string
+  parent_folder_id: string | null
+  color: FileFolderColor
+  position: number
+  created_at: string
+  updated_at: string
+}
+
+export interface UserFile {
+  id: string
+  user_id: string
+  folder_id: string | null
+  file_name: string
+  file_type: string
+  file_size: number
+  storage_path: string
+  share_id: string | null
+  share_expires_at: string | null
+  position: number
+  created_at: string
+  updated_at: string
+}
+
 export type Json =
   | string
   | number
@@ -114,6 +142,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      file_folders: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          parent_folder_id: string | null
+          color: string
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          parent_folder_id?: string | null
+          color?: string
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          parent_folder_id?: string | null
+          color?: string
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "file_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folders: {
         Row: {
           id: string
@@ -235,6 +311,66 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      user_files: {
+        Row: {
+          id: string
+          user_id: string
+          folder_id: string | null
+          file_name: string
+          file_type: string
+          file_size: number
+          storage_path: string
+          share_id: string | null
+          share_expires_at: string | null
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          folder_id?: string | null
+          file_name: string
+          file_type?: string
+          file_size?: number
+          storage_path: string
+          share_id?: string | null
+          share_expires_at?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          folder_id?: string | null
+          file_name?: string
+          file_type?: string
+          file_size?: number
+          storage_path?: string
+          share_id?: string | null
+          share_expires_at?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_files_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "file_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcripts: {
         Row: {

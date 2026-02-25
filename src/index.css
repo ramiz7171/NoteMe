@@ -99,6 +99,25 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dropZonePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
 /* ── Sidebar slide animation ── */
 .sidebar-slide {
   transition: transform 300ms ease, opacity 300ms ease, width 300ms ease, min-width 300ms ease, padding 300ms ease;

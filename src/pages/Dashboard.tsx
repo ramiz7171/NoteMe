@@ -10,6 +10,7 @@ import SettingsPage from './SettingsPage'
 import TranscriptPage from './TranscriptPage'
 import MeetingsPage from './MeetingsPage'
 import BoardPage from './BoardPage'
+import FilesPage from './FilesPage'
 import { useNotes } from '../hooks/useNotes'
 import { useFolders } from '../hooks/useFolders'
 import deleteSoundFile from '../assets/note delete.wav'
@@ -340,6 +341,7 @@ export default function Dashboard() {
             deleteNote={deleteNote}
           />
         )}
+        {navSection === 'files' && <FilesPage />}
         {navSection === 'settings' && <SettingsPage />}
 
         {navSection === 'notes' && <>
