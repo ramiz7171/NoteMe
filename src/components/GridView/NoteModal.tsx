@@ -67,9 +67,6 @@ export default function NoteModal({ note, onClose, onUpdate, onDelete }: NoteMod
             {note.color && (
               <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: note.color }} />
             )}
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
-              {note.title}
-            </span>
           </div>
           <button
             onClick={animateClose}
