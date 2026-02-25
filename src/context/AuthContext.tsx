@@ -39,13 +39,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only clear user state on explicit sign-out, not on token refresh failures
+      if (event === 'SIGNED_OUT') {
+        setSession(null)
+        setUser(null)
         setProfile(null)
+        setLoading(false)
+        return
+      }
+      if (session) {
+        setSession(session)
+        setUser(session.user)
+        fetchProfile(session.user.id)
       }
       setLoading(false)
     })
