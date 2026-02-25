@@ -100,6 +100,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedRef = useRef(false)
   const lastSavedContentRef = useRef<string | null>(null)
+  const lastSavedTitleRef = useRef<string | null>(null)
+  const lastSavedTypeRef = useRef<NoteType | null>(null)
   const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex })
 
   const autoSaveRef = useRef(autoSave)
@@ -116,6 +118,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
       if (nt !== note.note_type) updates.note_type = nt
       if (Object.keys(updates).length > 0) {
         lastSavedContentRef.current = c
+        lastSavedTitleRef.current = updates.title ?? null
+        lastSavedTypeRef.current = updates.note_type ?? null
         setSaving(true)
         await onUpdate(note.id, updates)
         setSaving(false)
@@ -183,9 +187,21 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   // Sync external note changes (from other tabs/sessions only)
   useEffect(() => {
     if (note && !isNew && editor) {
-      setTitle(note.title)
-      setNoteType(note.note_type)
-      // Skip if this is our own save echoing back via realtime
+      // Only sync title if it came from an external source (not our own save)
+      if (lastSavedTitleRef.current !== null && note.title === lastSavedTitleRef.current) {
+        lastSavedTitleRef.current = null
+      } else if (note.title !== latestRef.current.title) {
+        setTitle(note.title)
+      }
+
+      // Only sync type if it came from an external source
+      if (lastSavedTypeRef.current !== null && note.note_type === lastSavedTypeRef.current) {
+        lastSavedTypeRef.current = null
+      } else if (note.note_type !== latestRef.current.noteType) {
+        setNoteType(note.note_type)
+      }
+
+      // Skip content sync if this is our own save echoing back
       if (lastSavedContentRef.current !== null && note.content === lastSavedContentRef.current) {
         lastSavedContentRef.current = null
         return
@@ -332,6 +348,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
                   if (noteType !== note.note_type) updates.note_type = noteType
                   if (Object.keys(updates).length > 0) {
                     lastSavedContentRef.current = html
+                    lastSavedTitleRef.current = updates.title ?? null
+                    lastSavedTypeRef.current = updates.note_type ?? null
                     setSaving(true)
                     onUpdate(note.id, updates).then(() => {
                       setSaving(false)
