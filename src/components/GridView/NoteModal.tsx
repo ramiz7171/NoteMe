@@ -88,7 +88,6 @@ export default function NoteModal({ note, onClose, onUpdate, onDelete }: NoteMod
             onUpdate={onUpdate}
             onDelete={handleDelete}
             noTitleIndex={0}
-            onClose={animateClose}
           />
         </div>
       </div>

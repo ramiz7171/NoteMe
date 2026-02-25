@@ -53,7 +53,6 @@ interface Props {
   noTitleIndex: number
   tabTitle?: string
   onTitleChange?: (title: string) => void
-  onClose?: () => void
 }
 
 function escapeHtml(text: string) {
@@ -91,10 +90,11 @@ function getInitialContent(note: Note | null, isNew: boolean): string {
   return c.split('\n').map((line) => `<p>${escapeHtml(line) || '<br>'}</p>`).join('')
 }
 
-export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _onDelete, noTitleIndex, tabTitle, onTitleChange, onClose }: Props) {
+export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _onDelete, noTitleIndex, tabTitle, onTitleChange }: Props) {
   const [title, setTitle] = useState(note?.title ?? '')
   const [noteType, setNoteType] = useState<NoteType>(note?.note_type ?? 'basic')
   const [saving, setSaving] = useState(false)
+  const [autoSave, setAutoSave] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
   const [hasContent, setHasContent] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -102,8 +102,12 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const lastSavedContentRef = useRef<string | null>(null)
   const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex })
 
+  const autoSaveRef = useRef(autoSave)
+  autoSaveRef.current = autoSave
+
   const handleAutoSave = useCallback((t: string, c: string, nt: NoteType) => {
     if (!note || isNew) return
+    if (!autoSaveRef.current) return
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     saveTimeoutRef.current = setTimeout(async () => {
       const updates: { title?: string; content?: string; note_type?: NoteType } = {}
@@ -300,6 +304,52 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           {saving && (
             <span className="text-xs text-gray-400">Saving...</span>
           )}
+          {!isNew && note && (
+            <>
+              {/* Auto-save toggle */}
+              <button
+                type="button"
+                onClick={() => setAutoSave(prev => !prev)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
+                title={autoSave ? 'Auto-save is on' : 'Auto-save is off'}
+              >
+                <div className={`relative w-7 h-4 rounded-full transition-colors ${autoSave ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                  <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${autoSave ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                </div>
+                <span className="text-gray-500 dark:text-gray-400">{autoSave ? 'Auto' : 'Manual'}</span>
+              </button>
+              {/* Save button — only in manual mode */}
+              {!autoSave && (
+                <button
+                  onClick={() => {
+                    if (!editor || !note) return
+                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+                    const html = editor.getHTML()
+                    const updates: { title?: string; content?: string; note_type?: NoteType } = {}
+                    if (title !== note.title) updates.title = title || `No title ${noTitleIndex}`
+                    if (html !== note.content) updates.content = html
+                    if (noteType !== note.note_type) updates.note_type = noteType
+                    if (Object.keys(updates).length > 0) {
+                      lastSavedContentRef.current = html
+                      setSaving(true)
+                      onUpdate(note.id, updates).then(() => {
+                        setSaving(false)
+                        setHasChanges(false)
+                      })
+                    }
+                  }}
+                  disabled={saving || !hasChanges}
+                  className={`px-3 py-1.5 text-sm rounded-xl transition-all ${
+                    hasChanges
+                      ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
+                      : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  } disabled:opacity-50`}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              )}
+            </>
+          )}
           {isNew && (
             <button
               onClick={handleManualSave}
@@ -307,38 +357,6 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
               className="px-4 py-1.5 text-sm bg-black dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-all"
             >
               Save
-            </button>
-          )}
-          {!isNew && note && (
-            <button
-              onClick={() => {
-                if (!editor || !note) return
-                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-                const html = editor.getHTML()
-                const updates: { title?: string; content?: string; note_type?: NoteType } = {}
-                if (title !== note.title) updates.title = title || `No title ${noTitleIndex}`
-                if (html !== note.content) updates.content = html
-                if (noteType !== note.note_type) updates.note_type = noteType
-                if (Object.keys(updates).length > 0) {
-                  lastSavedContentRef.current = html
-                  setSaving(true)
-                  onUpdate(note.id, updates).then(() => {
-                    setSaving(false)
-                    setHasChanges(false)
-                    onClose?.()
-                  })
-                } else {
-                  onClose?.()
-                }
-              }}
-              disabled={saving || !hasChanges}
-              className={`px-3 py-1.5 text-sm rounded-xl transition-all ${
-                hasChanges
-                  ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
-                  : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-              } disabled:opacity-50`}
-            >
-              {saving ? 'Saving...' : 'Save'}
             </button>
           )}
         </div>
