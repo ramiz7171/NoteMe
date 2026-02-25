@@ -300,12 +300,12 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           options={NOTE_TYPES}
         />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {saving && (
             <span className="text-xs text-gray-400">Saving...</span>
           )}
           {!isNew && note && (
-            <>
+            <div className="flex items-center gap-2 w-[180px] justify-end">
               {/* Auto-save toggle */}
               <button
                 type="button"
@@ -313,10 +313,12 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
                 title={autoSave ? 'Auto-save is on' : 'Auto-save is off'}
               >
-                <div className={`relative w-7 h-4 rounded-full transition-colors ${autoSave ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                <div className={`relative w-7 h-4 rounded-full transition-colors ${autoSave ? 'bg-[var(--accent)]' : 'bg-gray-300 dark:bg-gray-600'}`}>
                   <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${autoSave ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                 </div>
-                <span className="text-gray-500 dark:text-gray-400">{autoSave ? 'Auto' : 'Manual'}</span>
+                <span className={`whitespace-nowrap ${autoSave ? 'text-[var(--accent)]' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {autoSave ? 'Auto save' : 'Manual'}
+                </span>
               </button>
               {/* Save button — only in manual mode */}
               {!autoSave && (
@@ -348,7 +350,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
                   {saving ? 'Saving...' : 'Save'}
                 </button>
               )}
-            </>
+            </div>
           )}
           {isNew && (
             <button
