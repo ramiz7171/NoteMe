@@ -18,6 +18,7 @@ import type { Note, NoteType } from '../types'
 
 export default function Dashboard() {
   const deleteSoundRef = useRef<HTMLAudioElement | null>(null)
+  const editorMainRef = useRef<HTMLElement>(null)
   const { notes, basicNotes, boardNotes, codeNotes, archivedNotes, deletedNotes, folderNotes, loading, createNote, updateNote, updateNoteColor, updatePositions, deleteNote, permanentDeleteNote, permanentDeleteAll, restoreNote, archiveNote, unarchiveNote, pinNote, moveToFolder, bulkMoveToFolder, bulkDelete, bulkArchive } = useNotes()
   const { folders, createFolder, renameFolder, deleteFolder } = useFolders()
   const [tabs, setTabs] = useState<Tab[]>([])
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [modalNoteId, setModalNoteId] = useState<string | null>(null)
   const [showNewNoteModal, setShowNewNoteModal] = useState(false)
   const [navSection, setNavSection] = useState<NavSection>('notes')
+  const [macOpenOrigin, setMacOpenOrigin] = useState<string>('center center')
 
   // Compute noTitleCounter dynamically: find the next available "No title N"
   // Only count active notes (not deleted), so if "No title 1" is in trash, it's available
@@ -97,6 +99,18 @@ export default function Dashboard() {
     setTabs(prev => [...prev, newTab])
     setActiveTabId(newTab.id)
   }, [])
+
+  const openNewTabAnimated = useCallback((e: React.MouseEvent) => {
+    const btn = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const main = editorMainRef.current
+    if (main) {
+      const mainRect = main.getBoundingClientRect()
+      const x = btn.left + btn.width / 2 - mainRect.left
+      const y = btn.top + btn.height / 2 - mainRect.top
+      setMacOpenOrigin(`${x}px ${y}px`)
+    }
+    openNewTab()
+  }, [openNewTab])
 
   const closeTab = useCallback((tabId: string) => {
     setTabs(prev => {
@@ -372,13 +386,32 @@ export default function Dashboard() {
             onBulkMoveToFolder={handleBulkMoveToFolder}
             onBulkDelete={handleBulkDelete}
             onBulkArchive={handleBulkArchive}
-            onNewNote={viewMode === 'grid' ? () => setShowNewNoteModal(true) : openNewTab}
+            onNewNote={viewMode === 'grid' ? (_e: React.MouseEvent) => setShowNewNoteModal(true) : openNewTabAnimated}
             viewMode={viewMode}
             onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
             isHidden={false}
           />
 
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+          {/* View toggle — top right corner */}
+          <button
+            onClick={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
+            className="absolute top-px right-2 z-10 p-1.5 rounded-lg bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] text-gray-500 dark:text-gray-400 transition-colors shadow-sm"
+            title={viewMode === 'list' ? 'Grid view' : 'List view'}
+          >
+            {viewMode === 'list' ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
           {viewMode === 'grid' ? (
             <main className="flex-1 overflow-hidden">
               {loading ? (
@@ -419,7 +452,12 @@ export default function Dashboard() {
                 onRenameGroup={handleRenameGroup}
               />
 
-              <main className="flex-1 overflow-hidden bg-white dark:bg-[#1e1e1e]">
+              <main
+                ref={editorMainRef}
+                className={`flex-1 overflow-hidden bg-white dark:bg-[#1e1e1e]${isNewNote ? ' animate-[macOpen_0.45s_cubic-bezier(0.16,1,0.3,1)]' : ''}`}
+                key={isNewNote ? activeTab?.id : undefined}
+                style={isNewNote ? { transformOrigin: macOpenOrigin } : undefined}
+              >
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />

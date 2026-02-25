@@ -292,14 +292,14 @@ export default function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onN
         onMouseDown={e => handleMiddleClick(e, tab.id)}
         onContextMenu={e => handleContextMenu(e, tab.id)}
         onClick={() => onSelectTab(tab.id)}
-        className={`group flex items-center gap-1.5 px-3 py-2 text-sm cursor-pointer min-w-[100px] max-w-[200px] transition-all duration-150 relative select-none rounded-t-xl ${
-          isActive && !hasColor ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-sm' : ''
+        className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer min-w-[100px] max-w-[200px] transition-all duration-150 relative select-none rounded-t-xl ${
+          isActive && !hasColor ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : ''
         }${
           isActive && hasColor ? 'text-gray-900 dark:text-white shadow-sm' : ''
         }${
-          !isActive ? 'bg-gray-300/50 dark:bg-white/8 text-gray-600 dark:text-gray-400' : ''
+          !isActive ? 'bg-gray-200/50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400' : ''
         }${
-          !isActive && !hasColor ? ' hover:bg-gray-300/70 dark:hover:bg-white/12' : ''
+          !isActive && !hasColor ? ' hover:bg-gray-200/80 dark:hover:bg-white/8' : ''
         }${
           isBeingDragged ? ' opacity-40 scale-95' : ''
         }`}
@@ -364,12 +364,12 @@ export default function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onN
   }
 
   return (
-    <div className="border-b border-gray-300/60 dark:border-white/5 bg-gray-200/80 dark:bg-black/30 shrink-0">
-      <div className="flex items-center overflow-x-auto min-h-[40px]">
+    <div className="border-b border-gray-200/80 dark:border-white/5 bg-gray-100/60 dark:bg-white/[0.02] shrink-0">
+      <div className="flex items-center overflow-x-auto min-h-[32px]">
         {tabs.length === 0 ? (
           <button
             onClick={onNewTab}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-[var(--accent)] hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors rounded-t-xl cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-[var(--accent)] hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors rounded-t-xl cursor-pointer"
           >
             New Note
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -380,7 +380,7 @@ export default function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onN
           <>
             {/* Ungrouped drop zone */}
             <div
-              className={`flex items-center min-h-[40px] transition-all duration-150 ${
+              className={`flex items-center min-h-[32px] transition-all duration-150 ${
                 isDragging && dragOverZone === 'ungrouped'
                   ? 'bg-blue-50/50 dark:bg-blue-500/5 ring-1 ring-blue-300/50 dark:ring-blue-500/20 rounded-lg mx-0.5'
                   : ''
@@ -391,7 +391,7 @@ export default function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onN
             >
               {ungrouped.map(renderTab)}
               {ungrouped.length === 0 && isDragging && (
-                <div className="px-4 py-2 text-[10px] text-gray-400 dark:text-gray-500 italic whitespace-nowrap">
+                <div className="px-4 py-1 text-[10px] text-gray-400 dark:text-gray-500 italic whitespace-nowrap">
                   Drop to ungroup
                 </div>
               )}
@@ -420,7 +420,7 @@ export default function TabBar({ tabs, activeTabId, onSelectTab, onCloseTab, onN
                   onDrop={handleDrop}
                 >
                   <div
-                    className="flex items-center gap-1 px-2 py-2 border-l-2 cursor-pointer select-none"
+                    className="flex items-center gap-1 px-2 py-1 border-l-2 cursor-pointer select-none"
                     style={{
                       borderLeftColor: groupBorderColor || 'rgba(156,163,175,0.5)',
                       ...groupBgStyle,

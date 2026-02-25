@@ -29,7 +29,7 @@ interface Props {
   onBulkMoveToFolder: (noteIds: string[], folderId: string | null) => void
   onBulkDelete: (noteIds: string[]) => void
   onBulkArchive: (noteIds: string[]) => void
-  onNewNote: () => void
+  onNewNote: (e: React.MouseEvent) => void
   viewMode: 'list' | 'grid'
   onToggleView: () => void
   isHidden: boolean
@@ -340,7 +340,7 @@ export default function Sidebar({
   searchQuery, onSearchChange,
   folders, folderNotes, onCreateFolder, onRenameFolder, onDeleteFolder,
   onMoveToFolder, onBulkMoveToFolder, onBulkDelete, onBulkArchive,
-  onNewNote, viewMode, onToggleView, isHidden,
+  onNewNote, viewMode: _viewMode, onToggleView: _onToggleView, isHidden,
 }: Props) {
   const [expandedLangs, setExpandedLangs] = useState<Set<string>>(new Set(['java', 'javascript', 'python', 'sql']))
   const [showBoard, setShowBoard] = useState(false)
@@ -534,7 +534,7 @@ export default function Sidebar({
       {/* New Note + Search */}
       <div className="p-3 space-y-2 shrink-0">
         <button
-          onClick={onNewNote}
+          onClick={(e) => onNewNote(e)}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 rounded-lg transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -555,24 +555,6 @@ export default function Sidebar({
               className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
             />
           </div>
-          <button
-            onClick={onToggleView}
-            className="p-2 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] text-gray-500 dark:text-gray-400 transition-colors shrink-0"
-            title={viewMode === 'list' ? 'Grid view' : 'List view'}
-          >
-            {viewMode === 'list' ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
         </div>
       </div>
 
