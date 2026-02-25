@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import Logo from '../Logo'
 
 type AuthMode = 'login' | 'signup' | 'magic-link'
 
@@ -36,27 +37,25 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-app-gradient px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
-            NoteMe
-          </h1>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
+          <Logo className="mx-auto" />
+          <p className="mt-3 text-gray-500 dark:text-gray-400 text-lg">
             Your notes, beautifully organized.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
+        <div className="glass-panel rounded-2xl p-8 shadow-xl">
           {/* Mode Tabs */}
-          <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <div className="flex gap-1 mb-6 bg-gray-100/80 dark:bg-white/5 rounded-xl p-1">
             {([['login', 'Sign In'], ['signup', 'Sign Up'], ['magic-link', 'Magic Link']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => { setMode(key); setError(''); setMessage('') }}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                   mode === key
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
@@ -76,7 +75,7 @@ export default function LoginForm() {
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                  className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
                   placeholder="Choose a username"
                 />
               </div>
@@ -91,7 +90,7 @@ export default function LoginForm() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
                 placeholder="you@example.com"
               />
             </div>
@@ -107,20 +106,20 @@ export default function LoginForm() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                  className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
                   placeholder="Min. 6 characters"
                 />
               </div>
             )}
 
             {error && (
-              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-xl p-3">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+              <div className="text-sm text-green-500 bg-green-50 dark:bg-green-500/10 rounded-xl p-3">
                 {message}
               </div>
             )}
@@ -128,7 +127,7 @@ export default function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="w-full py-2.5 bg-black dark:bg-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black font-medium rounded-xl transition-all"
             >
               {loading
                 ? 'Please wait...'

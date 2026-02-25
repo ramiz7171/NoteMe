@@ -1,11 +1,81 @@
 @import "tailwindcss";
 
-/* highlight.js dark mode overrides */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── App background ── */
+.bg-app-gradient {
+  background: #f0f0f0;
+}
+.dark .bg-app-gradient {
+  background: #141414;
+}
+
+/* ── Glassmorphism panels (sidebar, dropdowns) ── */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.dark .glass-panel {
+  background: rgba(28, 28, 28, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Note cards (grid view) ── */
+.glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.dark .glass-card {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.glass-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.dark .glass-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Solid panels (header, editor area) ── */
+.glass-panel-solid {
+  background: #ffffff;
+}
+.dark .glass-panel-solid {
+  background: #1a1a1a;
+}
+
+/* ── Base text colors ── */
+body {
+  color: #1a1a1a;
+}
+.dark body {
+  color: #f0f0f0;
+}
+
+/* ── Accent colors ── */
+:root {
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+}
+.dark {
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+}
+
+/* ── highlight.js dark mode overrides ── */
 .dark pre code.hljs {
   background: transparent;
   color: #e5e7eb;
 }
-
 .dark .hljs-keyword { color: #c084fc; }
 .dark .hljs-string { color: #86efac; }
 .dark .hljs-number { color: #fdba74; }
@@ -17,3 +87,59 @@
 .dark .hljs-attr { color: #fdba74; }
 .dark .hljs-variable { color: #e5e7eb; }
 .dark .hljs-params { color: #e5e7eb; }
+
+/* ── Animations ── */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Sidebar slide animation ── */
+.sidebar-slide {
+  transition: transform 300ms ease, opacity 300ms ease, width 300ms ease, min-width 300ms ease, padding 300ms ease;
+}
+.sidebar-hidden {
+  transform: translateX(-100%);
+  opacity: 0;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border: none !important;
+}
+
+/* ── Scrollbar styling ── */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
