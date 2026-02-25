@@ -53,6 +53,7 @@ interface Props {
   noTitleIndex: number
   tabTitle?: string
   onTitleChange?: (title: string) => void
+  onClose?: () => void
 }
 
 function escapeHtml(text: string) {
@@ -90,11 +91,11 @@ function getInitialContent(note: Note | null, isNew: boolean): string {
   return c.split('\n').map((line) => `<p>${escapeHtml(line) || '<br>'}</p>`).join('')
 }
 
-export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _onDelete, noTitleIndex, tabTitle, onTitleChange }: Props) {
+export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _onDelete, noTitleIndex, tabTitle, onTitleChange, onClose }: Props) {
   const [title, setTitle] = useState(note?.title ?? '')
   const [noteType, setNoteType] = useState<NoteType>(note?.note_type ?? 'basic')
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
   const [hasContent, setHasContent] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedRef = useRef(false)
@@ -114,6 +115,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
         setSaving(true)
         await onUpdate(note.id, updates)
         setSaving(false)
+        setHasChanges(false)
       }
     }, 800)
   }, [note, isNew, onUpdate, noTitleIndex])
@@ -157,6 +159,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
       latestRef.current.content = html
       setHasContent(!!text.trim())
       if (!latestRef.current.isNew && latestRef.current.note) {
+        const n = latestRef.current.note
+        setHasChanges(html !== n.content || latestRef.current.title !== n.title || latestRef.current.noteType !== n.note_type)
         handleAutoSave(latestRef.current.title, html, latestRef.current.noteType)
       }
     },
@@ -231,7 +235,10 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const handleTitleChange = (val: string) => {
     setTitle(val)
     onTitleChange?.(val)
-    if (!isNew && note && editor) handleAutoSave(val, editor.getHTML(), noteType)
+    if (!isNew && note && editor) {
+      setHasChanges(val !== note.title || editor.getHTML() !== note.content || noteType !== note.note_type)
+      handleAutoSave(val, editor.getHTML(), noteType)
+    }
   }
 
   const handleTypeChange = (val: NoteType) => {
@@ -251,7 +258,10 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
         editor.commands.focus('end')
       }
     }
-    if (!isNew && note && editor) handleAutoSave(title, editor.getHTML(), val)
+    if (!isNew && note && editor) {
+      setHasChanges(title !== note.title || editor.getHTML() !== note.content || val !== note.note_type)
+      handleAutoSave(title, editor.getHTML(), val)
+    }
   }
 
   const handleManualSave = async () => {
@@ -314,25 +324,21 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
                   setSaving(true)
                   onUpdate(note.id, updates).then(() => {
                     setSaving(false)
-                    setSaved(true)
-                    setTimeout(() => setSaved(false), 1500)
+                    setHasChanges(false)
+                    onClose?.()
                   })
                 } else {
-                  setSaved(true)
-                  setTimeout(() => setSaved(false), 1500)
+                  onClose?.()
                 }
               }}
-              disabled={saving}
-              className="px-3 py-1.5 text-sm bg-black dark:bg-white text-white dark:text-black rounded-xl hover:opacity-90 disabled:opacity-50 transition-colors"
+              disabled={saving || !hasChanges}
+              className={`px-3 py-1.5 text-sm rounded-xl transition-all ${
+                hasChanges
+                  ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+              } disabled:opacity-50`}
             >
-              {saved ? (
-                <span className="flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Saved!
-                </span>
-              ) : 'Save'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
           )}
         </div>
