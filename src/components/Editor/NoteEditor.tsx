@@ -94,7 +94,10 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const [title, setTitle] = useState(note?.title ?? '')
   const [noteType, setNoteType] = useState<NoteType>(note?.note_type ?? 'basic')
   const [saving, setSaving] = useState(false)
-  const [autoSave, setAutoSave] = useState(true)
+  const [autoSave, setAutoSave] = useState(() => {
+    const stored = localStorage.getItem('noteme-autosave')
+    return stored === null ? true : stored === 'true'
+  })
   const [hasChanges, setHasChanges] = useState(false)
   const [hasContent, setHasContent] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -107,11 +110,25 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const autoSaveRef = useRef(autoSave)
   autoSaveRef.current = autoSave
 
+  const toggleAutoSave = useCallback(() => {
+    setAutoSave(prev => {
+      const next = !prev
+      localStorage.setItem('noteme-autosave', String(next))
+      // If turning off, cancel any pending auto-save
+      if (!next && saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+        saveTimeoutRef.current = null
+      }
+      return next
+    })
+  }, [])
+
   const handleAutoSave = useCallback((t: string, c: string, nt: NoteType) => {
     if (!note || isNew) return
     if (!autoSaveRef.current) return
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     saveTimeoutRef.current = setTimeout(async () => {
+      if (!autoSaveRef.current) return
       const updates: { title?: string; content?: string; note_type?: NoteType } = {}
       if (t !== note.title) updates.title = t || `No title ${noTitleIndex}`
       if (c !== note.content) updates.content = c
@@ -231,10 +248,11 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     }
   }, [tabTitle])
 
-  // Save on unmount
+  // Save on unmount (only if auto-save is on)
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+      if (!autoSaveRef.current) return
       const { title: t, content: c, noteType: nt, note: n, isNew: isN, noTitleIndex: idx } = latestRef.current
       if (n && !isN) {
         const updates: { title?: string; content?: string; note_type?: NoteType } = {}
@@ -324,7 +342,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           {!isNew && (
             <button
               type="button"
-              onClick={() => setAutoSave(prev => !prev)}
+              onClick={toggleAutoSave}
               className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
               title={autoSave ? 'Auto-save is on' : 'Auto-save is off'}
             >
