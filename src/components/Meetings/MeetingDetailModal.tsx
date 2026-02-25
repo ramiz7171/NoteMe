@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import TagInput from '../shared/TagInput'
 import StatusBadge from '../shared/StatusBadge'
+import CustomSelect from '../shared/CustomSelect'
 import { useAuth } from '../../context/AuthContext'
 import { useTranscriptVoiceRecorder } from '../../hooks/useTranscriptVoiceRecorder'
 import { useSettings } from '../../hooks/useSettings'
@@ -356,15 +357,13 @@ export default function MeetingDetailModal({ meeting, onUpdate, onDelete, onClos
             {/* Status */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
-              <select
+              <CustomSelect
                 value={status}
-                onChange={e => handleStatusChange(e.target.value as MeetingStatus)}
-                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
-              >
-                {STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+                onChange={val => handleStatusChange(val as MeetingStatus)}
+                options={STATUS_OPTIONS}
+                size="md"
+                className="w-full"
+              />
             </div>
 
             {/* Duration */}

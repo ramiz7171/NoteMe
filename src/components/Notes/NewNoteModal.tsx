@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CustomSelect from '../shared/CustomSelect'
 import type { NoteType } from '../../types'
 
 interface Props {
@@ -69,15 +70,13 @@ export default function NewNoteModal({ onClose, onCreate }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
-            <select
+            <CustomSelect
               value={noteType}
-              onChange={e => setNoteType(e.target.value as NoteType)}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {NOTE_TYPES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+              onChange={val => setNoteType(val as NoteType)}
+              options={NOTE_TYPES}
+              size="md"
+              className="w-full"
+            />
           </div>
 
           <div>

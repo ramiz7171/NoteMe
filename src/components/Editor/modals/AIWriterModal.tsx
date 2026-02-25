@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { generateEmail, generateMessage, getDailyUsage, addDailyUsage, AI_LIMITS } from '../../../lib/gemini'
 import { useAuth } from '../../../context/AuthContext'
+import CustomSelect from '../../shared/CustomSelect'
 
 interface AIWriterModalProps {
   editor: Editor
@@ -150,15 +151,13 @@ export default function AIWriterModal({ editor, onClose }: AIWriterModalProps) {
 
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tone</label>
-            <select
+            <CustomSelect
               value={tone}
-              onChange={e => setTone(e.target.value as Tone)}
-              className={inputClass}
-            >
-              {TONES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+              onChange={val => setTone(val as Tone)}
+              options={TONES}
+              size="md"
+              className="w-full"
+            />
           </div>
 
           <button

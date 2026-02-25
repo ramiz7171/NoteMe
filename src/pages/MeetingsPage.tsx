@@ -3,6 +3,7 @@ import { useMeetings } from '../hooks/useMeetings'
 import MeetingDetailModal from '../components/Meetings/MeetingDetailModal'
 import NewMeetingModal from '../components/Meetings/NewMeetingModal'
 import StatusBadge from '../components/shared/StatusBadge'
+import CustomSelect from '../components/shared/CustomSelect'
 import type { Meeting } from '../types'
 
 type FilterMode = 'all' | 'upcoming' | 'completed' | 'cancelled'
@@ -102,16 +103,18 @@ export default function MeetingsPage() {
             />
           </div>
 
-          <select
+          <CustomSelect
             value={filter}
-            onChange={e => setFilter(e.target.value as FilterMode)}
-            className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
-          >
-            <option value="all">All</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            onChange={val => setFilter(val as FilterMode)}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'upcoming', label: 'Upcoming' },
+              { value: 'completed', label: 'Completed' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ]}
+            size="md"
+            className="w-full"
+          />
         </div>
 
         {/* Meeting list */}

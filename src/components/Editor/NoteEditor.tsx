@@ -26,6 +26,7 @@ import './tiptap-styles.css'
 import { FontSize } from './extensions/FontSize'
 import { AudioNode } from './extensions/AudioNode'
 import EditorToolbar from './EditorToolbar'
+import CustomSelect from '../shared/CustomSelect'
 import type { Note, NoteType } from '../../types'
 
 const lowlight = createLowlight(common)
@@ -278,15 +279,11 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           className="flex-1 text-lg font-semibold bg-transparent text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none"
         />
 
-        <select
+        <CustomSelect
           value={noteType}
-          onChange={(e) => handleTypeChange(e.target.value as NoteType)}
-          className="px-2.5 py-1 text-xs font-medium rounded-xl bg-gray-100/80 dark:bg-white/10 text-gray-600 dark:text-gray-400 border-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)] cursor-pointer"
-        >
-          {NOTE_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
+          onChange={(val) => handleTypeChange(val as NoteType)}
+          options={NOTE_TYPES}
+        />
 
         <div className="flex items-center gap-2">
           {saving && (

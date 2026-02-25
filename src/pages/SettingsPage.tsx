@@ -5,6 +5,7 @@ import { useSettings } from '../hooks/useSettings'
 import { supabase } from '../lib/supabase'
 import { getDailyUsage, AI_LIMITS } from '../lib/gemini'
 import ToggleSwitch from '../components/shared/ToggleSwitch'
+import CustomSelect from '../components/shared/CustomSelect'
 import type { NotificationSettings } from '../types'
 
 export default function SettingsPage() {
@@ -109,8 +110,6 @@ export default function SettingsPage() {
 
   const inputClass =
     'w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 transition-colors'
-  const selectClass =
-    'w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-[var(--accent)]/40 transition-colors'
   const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
   const sectionTitle = 'text-base font-bold text-gray-900 dark:text-white mb-4'
 
@@ -176,28 +175,30 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-4">
             <div>
               <label className={labelClass}>Tone</label>
-              <select
+              <CustomSelect
                 value={settings.ai_tone}
-                onChange={e => handleSettingsUpdate({ ai_tone: e.target.value as typeof settings.ai_tone })}
-                className={selectClass}
-              >
-                <option value="professional">Professional</option>
-                <option value="casual">Casual</option>
-                <option value="concise">Concise</option>
-                <option value="detailed">Detailed</option>
-              </select>
+                onChange={val => handleSettingsUpdate({ ai_tone: val as typeof settings.ai_tone })}
+                options={[
+                  { value: 'professional', label: 'Professional' },
+                  { value: 'casual', label: 'Casual' },
+                  { value: 'concise', label: 'Concise' },
+                  { value: 'detailed', label: 'Detailed' },
+                ]}
+                size="md"
+              />
             </div>
             <div>
               <label className={labelClass}>Summary Length</label>
-              <select
+              <CustomSelect
                 value={settings.summary_length}
-                onChange={e => handleSettingsUpdate({ summary_length: e.target.value as typeof settings.summary_length })}
-                className={selectClass}
-              >
-                <option value="short">Short</option>
-                <option value="medium">Medium</option>
-                <option value="long">Long</option>
-              </select>
+                onChange={val => handleSettingsUpdate({ summary_length: val as typeof settings.summary_length })}
+                options={[
+                  { value: 'short', label: 'Short' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'long', label: 'Long' },
+                ]}
+                size="md"
+              />
             </div>
           </div>
         </div>
