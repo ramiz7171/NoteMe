@@ -47,6 +47,15 @@ export function useTranscripts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchTranscripts()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [fetchTranscripts])
+
   const createTranscript = useCallback(async (data: {
     title: string
     transcript_text?: string

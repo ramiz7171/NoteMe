@@ -34,6 +34,35 @@ export function useSettings() {
 
   useEffect(() => { fetchSettings() }, [fetchSettings])
 
+  // Realtime subscription for cross-device sync
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel('user-settings-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_settings',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          setSettings(payload.new as unknown as UserSettings)
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  // Refetch when tab becomes visible again (handles missed events during sleep/background)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchSettings()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [fetchSettings])
+
   const updateSettings = useCallback(async (updates: Partial<UserSettings>) => {
     if (!user || !settings) return
     // Optimistic update

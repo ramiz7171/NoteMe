@@ -99,6 +99,18 @@ export function useFiles() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchFileFolders()
+        fetchUserFiles()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [fetchFileFolders, fetchUserFiles])
+
   // Folder CRUD
   const createFileFolder = useCallback(async (name: string, parentFolderId: string | null, color: FileFolderColor = 'blue') => {
     if (!user) return
