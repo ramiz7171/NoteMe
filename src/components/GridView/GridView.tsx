@@ -441,7 +441,7 @@ export default function GridView({
   const allSelected = hasSelection && gridSelectedIds.size === notes.length
 
   return (
-    <div className="h-full overflow-y-auto p-6">
+    <div className="h-full overflow-y-auto pt-10 px-6 pb-6">
       {/* Select All / Deselect bar */}
       {hasSelection && (
         <div className="flex items-center gap-3 mb-4 px-1">
