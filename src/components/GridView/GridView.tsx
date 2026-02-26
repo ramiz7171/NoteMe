@@ -7,6 +7,7 @@ interface GridViewProps {
   notes: Note[]
   folders: Folder[]
   selectedNoteId: string | null
+  searchQuery?: string
   onSelectNote: (note: Note) => void
   onDeleteNote: (id: string) => void
   onArchiveNote: (id: string) => void
@@ -16,6 +17,18 @@ interface GridViewProps {
   onUpdateColor: (noteId: string, color: string) => void
   onReorder: (updates: { id: string; position: number }[]) => void
   onCreateNote: () => void
+}
+
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query) return text
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i} className="bg-yellow-300 dark:bg-yellow-500/50 text-inherit rounded-sm px-px">{part}</mark>
+      : part
+  )
 }
 
 const NOTE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
@@ -30,6 +43,7 @@ function GridCard({
   note,
   isSelected,
   folders,
+  searchQuery = '',
   onSelect,
   onDelete,
   onArchive,
@@ -46,6 +60,7 @@ function GridCard({
   note: Note
   isSelected: boolean
   folders: Folder[]
+  searchQuery?: string
   onSelect: () => void
   onDelete: () => void
   onArchive: () => void
@@ -163,14 +178,14 @@ function GridCard({
             />
           ) : (
             <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
-              {note.title}
+              {highlightText(note.title, searchQuery)}
             </h3>
           )}
         </div>
 
         {/* Content preview */}
         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 mb-3 leading-relaxed min-h-[3rem]">
-          {plainContent || 'Empty note'}
+          {plainContent ? highlightText(plainContent, searchQuery) : 'Empty note'}
         </p>
 
         {/* Footer: type badge + date */}
@@ -330,6 +345,7 @@ export default function GridView({
   notes,
   folders,
   selectedNoteId,
+  searchQuery = '',
   onSelectNote,
   onDeleteNote,
   onArchiveNote,
@@ -415,6 +431,7 @@ export default function GridView({
               note={note}
               isSelected={selectedNoteId === note.id}
               folders={folders}
+              searchQuery={searchQuery}
               onSelect={() => onSelectNote(note)}
               onDelete={() => onDeleteNote(note.id)}
               onArchive={() => onArchiveNote(note.id)}
