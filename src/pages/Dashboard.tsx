@@ -484,6 +484,9 @@ export default function Dashboard() {
                   onUpdateColor={handleUpdateNoteColor}
                   onReorder={handleGridReorder}
                   onCreateNote={() => setShowNewNoteModal(true)}
+                  onBulkDelete={handleBulkDelete}
+                  onBulkArchive={handleBulkArchive}
+                  onBulkMoveToFolder={handleBulkMoveToFolder}
                 />
               )}
             </main>
