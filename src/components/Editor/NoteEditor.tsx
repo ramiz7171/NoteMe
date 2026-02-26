@@ -105,7 +105,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const lastSavedContentRef = useRef<string | null>(null)
   const lastSavedTitleRef = useRef<string | null>(null)
   const lastSavedTypeRef = useRef<NoteType | null>(null)
-  const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex })
+  const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex, contentDirty: false })
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
 
   const autoSaveRef = useRef(autoSave)
   autoSaveRef.current = autoSave
@@ -123,27 +124,38 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     })
   }, [])
 
-  const handleAutoSave = useCallback((t: string, c: string, nt: NoteType) => {
-    if (!note || isNew) return
-    if (!autoSaveRef.current) return
+  // Auto-save that serializes content LAZILY — only when the 800ms timer fires,
+  // not on every keystroke. All values are read from refs so it stays current.
+  const scheduleAutoSave = useCallback(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     saveTimeoutRef.current = setTimeout(async () => {
       if (!autoSaveRef.current) return
+      const n = latestRef.current.note
+      if (!n || latestRef.current.isNew) return
+      const ed = editorRef.current
+      if (!ed) return
+      // Serialize content ONLY now — once per 800ms debounce
+      const html = ed.getHTML()
+      latestRef.current.content = html
+      latestRef.current.contentDirty = false
+      const t = latestRef.current.title
+      const nt = latestRef.current.noteType
+      const idx = latestRef.current.noTitleIndex
       const updates: { title?: string; content?: string; note_type?: NoteType } = {}
-      if (t !== note.title) updates.title = t || `No title ${noTitleIndex}`
-      if (c !== note.content) updates.content = c
-      if (nt !== note.note_type) updates.note_type = nt
+      if (t !== n.title) updates.title = t || `No title ${idx}`
+      if (html !== n.content) updates.content = html
+      if (nt !== n.note_type) updates.note_type = nt
       if (Object.keys(updates).length > 0) {
-        lastSavedContentRef.current = c
+        lastSavedContentRef.current = html
         lastSavedTitleRef.current = updates.title ?? null
         lastSavedTypeRef.current = updates.note_type ?? null
         setSaving(true)
-        await onUpdate(note.id, updates)
+        await onUpdate(n.id, updates)
         setSaving(false)
         setHasChanges(false)
       }
     }, 800)
-  }, [note, isNew, onUpdate, noTitleIndex])
+  }, [onUpdate])
 
   const editor = useEditor({
     extensions: [
@@ -176,30 +188,44 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
       FontSize,
       AudioNode,
     ],
-    content: getInitialContent(note, isNew),
+    // Start empty — large content is loaded asynchronously after mount to avoid blocking the UI
+    content: '',
     editable: true,
     onUpdate: ({ editor: ed }) => {
-      const html = ed.getHTML()
-      const text = ed.getText()
-      latestRef.current.content = html
-      setHasContent(!!text.trim())
+      // All O(1) operations — no getHTML() or getText() here
+      latestRef.current.contentDirty = true
+      // ProseMirror doc content size: empty paragraph = 2, anything typed > 2
+      setHasContent(ed.state.doc.content.size > 2)
       if (!latestRef.current.isNew && latestRef.current.note) {
-        const n = latestRef.current.note
-        setHasChanges(html !== n.content || latestRef.current.title !== n.title || latestRef.current.noteType !== n.note_type)
-        handleAutoSave(latestRef.current.title, html, latestRef.current.noteType)
+        setHasChanges(true)
+        scheduleAutoSave()
       }
     },
   })
+  editorRef.current = editor
 
-  // Keep latestRef in sync
+  // Load initial content asynchronously to avoid blocking the UI on mount
+  const initialContentLoadedRef = useRef(false)
+  useEffect(() => {
+    if (editor && !initialContentLoadedRef.current) {
+      initialContentLoadedRef.current = true
+      const initialContent = getInitialContent(note, isNew)
+      if (initialContent) {
+        // Use requestAnimationFrame so the editor shell renders first
+        requestAnimationFrame(() => {
+          editor.commands.setContent(initialContent, { emitUpdate: false })
+          latestRef.current.content = initialContent
+        })
+      }
+    }
+  }, [editor])
+
+  // Keep latestRef in sync (no serialization — just cheap ref assignments)
   latestRef.current.title = title
   latestRef.current.noteType = noteType
   latestRef.current.note = note
   latestRef.current.isNew = isNew
   latestRef.current.noTitleIndex = noTitleIndex
-  if (editor) {
-    latestRef.current.content = editor.getHTML()
-  }
 
   // Sync external note changes (from other tabs/sessions only)
   useEffect(() => {
@@ -218,15 +244,19 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
         setNoteType(note.note_type)
       }
 
+      // Skip content sync if user is actively editing (dirty = unserialized local changes)
+      if (latestRef.current.contentDirty) return
+
       // Skip content sync if this is our own save echoing back
       if (lastSavedContentRef.current !== null && note.content === lastSavedContentRef.current) {
-        lastSavedContentRef.current = null
         return
       }
-      const currentHtml = editor.getHTML()
+      // Use cached content from ref — NO expensive editor.getHTML() call
+      const currentHtml = latestRef.current.content
       const noteContent = getInitialContent(note, false)
       if (noteContent !== currentHtml && note.content !== currentHtml) {
         editor.commands.setContent(noteContent, { emitUpdate: false })
+        latestRef.current.content = noteContent
       }
     }
   }, [note?.title, note?.content, note?.note_type, editor, isNew])
@@ -253,6 +283,12 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
       if (!autoSaveRef.current) return
+      // Flush any pending content from the editor before saving
+      const ed = editorRef.current
+      if (latestRef.current.contentDirty && ed) {
+        latestRef.current.content = ed.getHTML()
+        latestRef.current.contentDirty = false
+      }
       const { title: t, content: c, noteType: nt, note: n, isNew: isN, noTitleIndex: idx } = latestRef.current
       if (n && !isN) {
         const updates: { title?: string; content?: string; note_type?: NoteType } = {}
@@ -273,9 +309,9 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const handleTitleChange = (val: string) => {
     setTitle(val)
     onTitleChange?.(val)
-    if (!isNew && note && editor) {
-      setHasChanges(val !== note.title || editor.getHTML() !== note.content || noteType !== note.note_type)
-      handleAutoSave(val, editor.getHTML(), noteType)
+    if (!isNew && note) {
+      setHasChanges(true)
+      scheduleAutoSave()
     }
   }
 
@@ -296,9 +332,9 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
         editor.commands.focus('end')
       }
     }
-    if (!isNew && note && editor) {
-      setHasChanges(title !== note.title || editor.getHTML() !== note.content || val !== note.note_type)
-      handleAutoSave(title, editor.getHTML(), val)
+    if (!isNew && note) {
+      setHasChanges(true)
+      scheduleAutoSave()
     }
   }
 

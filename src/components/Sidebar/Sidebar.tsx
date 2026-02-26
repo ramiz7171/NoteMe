@@ -42,9 +42,21 @@ const CODE_LANGUAGES: { key: string; label: string; color: string }[] = [
   { key: 'sql', label: 'SQL', color: 'text-green-400' },
 ]
 
+function sidebarHighlight(text: string, query: string): React.ReactNode {
+  if (!query) return text
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <span key={i} style={{ backgroundColor: '#facc15', color: 'inherit', borderRadius: '2px', padding: '0 2px' }}>{part}</span>
+      : part
+  )
+}
+
 function NoteItem({
   note, isSelected, onClick, onDelete, onArchive, onUnarchive, onPin, onRename, isArchived,
-  selectMode, isChecked, onToggleCheck, folders, onMoveToFolder,
+  selectMode, isChecked, onToggleCheck, folders, onMoveToFolder, searchQuery = '',
 }: {
   note: Note
   isSelected: boolean
@@ -60,6 +72,7 @@ function NoteItem({
   onToggleCheck?: () => void
   folders?: Folder[]
   onMoveToFolder?: (folderId: string | null) => void
+  searchQuery?: string
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -124,7 +137,7 @@ function NoteItem({
         <div className="flex-1 px-2 py-2.5 min-w-0">
           <div className="flex items-center gap-1.5">
             {note.pinned && <span className="w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />}
-            <span className="font-medium truncate">{note.title}</span>
+            <span className="font-medium truncate">{sidebarHighlight(note.title, searchQuery)}</span>
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {new Date(note.updated_at).toLocaleDateString()}
@@ -163,7 +176,7 @@ function NoteItem({
             {note.pinned && (
               <span className="w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />
             )}
-            <span className="font-medium truncate">{note.title}</span>
+            <span className="font-medium truncate">{sidebarHighlight(note.title, searchQuery)}</span>
           </div>
         )}
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -526,6 +539,7 @@ export default function Sidebar({
       onToggleCheck={() => toggleSelect(note.id)}
       folders={folders}
       onMoveToFolder={(folderId) => onMoveToFolder(note.id, folderId)}
+      searchQuery={searchQuery}
     />
   )
 

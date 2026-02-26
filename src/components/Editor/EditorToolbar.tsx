@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import type { Editor } from '@tiptap/react'
 import { FONT_SIZES } from './extensions/FontSize'
 import LinkModal from './modals/LinkModal'
@@ -41,7 +41,7 @@ interface EditorToolbarProps {
   noteType: NoteType
 }
 
-export default function EditorToolbar({ editor, title, noteType }: EditorToolbarProps) {
+function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
   const { user, profile } = useAuth()
   const isAdmin = profile?.is_admin === true
   const [showLinkModal, setShowLinkModal] = useState(false)
@@ -57,6 +57,24 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
   const [aiError, setAiError] = useState<string | null>(null)
   const [showAIWriterModal, setShowAIWriterModal] = useState(false)
   const [showEmojiMenu, setShowEmojiMenu] = useState(false)
+
+  // Cheap O(1) flag for "has any text" — used for disabling buttons.
+  // Uses ProseMirror doc content size (empty paragraph = 2).
+  const [hasText, setHasText] = useState(() => editor.state.doc.content.size > 2)
+  const textDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const handler = () => {
+      // O(1) check — update immediately
+      setHasText(editor.state.doc.content.size > 2)
+      // No getText() here — let onClick handlers fetch fresh text on demand
+    }
+    editor.on('update', handler)
+    return () => {
+      editor.off('update', handler)
+      if (textDebounceRef.current) clearTimeout(textDebounceRef.current)
+    }
+  }, [editor])
 
   const toolbarRef = useRef<HTMLDivElement>(null)
   const tableButtonRef = useRef<HTMLButtonElement>(null)
@@ -483,14 +501,15 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
         {/* ── AI Summarize ── */}
         {(() => {
           const sumUsage = user ? getDailyUsage('summarize', user.id, AI_LIMITS.summarize.daily) : { remaining: 0 }
-          const text = editor.getText()
-          const tooLong = !isAdmin && text.length > AI_LIMITS.summarize.maxChars
           const noUses = !isAdmin && sumUsage.remaining <= 0
-          const disabled = summarizing || fixingGrammar || fixingCode || !text.trim() || noUses || tooLong
+          const disabled = summarizing || fixingGrammar || fixingCode || !hasText || noUses
           return (
             <button
               onClick={async () => {
                 if (!user || disabled) return
+                const text = editor.getText()
+                const tooLong = !isAdmin && text.length > AI_LIMITS.summarize.maxChars
+                if (tooLong) { setAiError(`Text too long (max ${(AI_LIMITS.summarize.maxChars / 1000).toFixed(0)}k chars)`); setTimeout(() => setAiError(null), 4000); return }
                 setSummarizing(true)
                 setAiError(null)
                 try {
@@ -509,8 +528,8 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                 }
               }}
               disabled={disabled}
-              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${summarizing ? 'opacity-50 cursor-wait' : ''} ${noUses || tooLong ? 'opacity-40' : ''}`}
-              title={isAdmin ? 'Summarize (unlimited)' : noUses ? 'Daily limit reached (20/day)' : tooLong ? `Text too long (max ${(AI_LIMITS.summarize.maxChars / 1000).toFixed(0)}k chars)` : `Summarize (${sumUsage.remaining} left today)`}
+              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${summarizing ? 'opacity-50 cursor-wait' : ''} ${noUses ? 'opacity-40' : ''}`}
+              title={isAdmin ? 'Summarize (unlimited)' : noUses ? 'Daily limit reached (20/day)' : `Summarize (${sumUsage.remaining} left today)`}
             >
               {summarizing ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -529,22 +548,24 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
         {/* ── AI Grammar Fix ── */}
         {(() => {
           const gramUsage = user ? getDailyUsage('grammar', user.id, AI_LIMITS.grammar.daily) : { remaining: 0 }
-          const { from, to } = editor.state.selection
-          const hasSelection = from !== to
-          const gramText = hasSelection ? editor.state.doc.textBetween(from, to, ' ') : editor.getText()
-          const tooLong = !isAdmin && gramText.length > AI_LIMITS.grammar.maxChars
           const noUses = !isAdmin && gramUsage.remaining <= 0
-          const disabled = fixingGrammar || summarizing || fixingCode || !editor.getText().trim() || noUses || tooLong
+          const disabled = fixingGrammar || summarizing || fixingCode || !hasText || noUses
           return (
             <button
               onClick={async () => {
                 if (!user || disabled) return
+                // Get fresh text/selection at click time — NOT during render
+                const { from: f, to: t } = editor.state.selection
+                const hasSel = f !== t
+                const freshGramText = hasSel ? editor.state.doc.textBetween(f, t, ' ') : editor.getText()
+                const tooLong = !isAdmin && freshGramText.length > AI_LIMITS.grammar.maxChars
+                if (tooLong) { setAiError(`Text too long (max ${(AI_LIMITS.grammar.maxChars / 1000).toFixed(0)}k chars)`); setTimeout(() => setAiError(null), 4000); return }
                 setFixingGrammar(true)
                 setAiError(null)
                 try {
-                  const fixed = await fixGrammar(gramText)
-                  if (hasSelection) {
-                    editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, fixed).run()
+                  const fixed = await fixGrammar(freshGramText)
+                  if (hasSel) {
+                    editor.chain().focus().deleteRange({ from: f, to: t }).insertContentAt(f, fixed).run()
                   } else {
                     editor.commands.setContent(fixed)
                   }
@@ -558,8 +579,8 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                 }
               }}
               disabled={disabled}
-              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingGrammar ? 'opacity-50 cursor-wait' : ''} ${noUses || tooLong ? 'opacity-40' : ''}`}
-              title={isAdmin ? 'Fix Grammar (unlimited)' : noUses ? 'Daily limit reached (20/day)' : tooLong ? `Text too long (max ${(AI_LIMITS.grammar.maxChars / 1000).toFixed(0)}k chars)` : `Fix Grammar (${gramUsage.remaining} left today)`}
+              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingGrammar ? 'opacity-50 cursor-wait' : ''} ${noUses ? 'opacity-40' : ''}`}
+              title={isAdmin ? 'Fix Grammar (unlimited)' : noUses ? 'Daily limit reached (20/day)' : `Fix Grammar (${gramUsage.remaining} left today)`}
             >
               {fixingGrammar ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -578,18 +599,19 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
         {/* ── AI Fix Code (only for programming language note types) ── */}
         {CODE_TYPES.includes(noteType) && (() => {
           const usage = user ? getCodeFixUsage(user.id) : { used: 0, remaining: 0 }
-          const codeText = editor.getText()
-          const lineCount = codeText.trim() ? codeText.split('\n').length : 0
-          const overLimit = !isAdmin && lineCount > usage.remaining
           const anyBusy = fixingCode || summarizing || fixingGrammar
           return (
             <button
               onClick={async () => {
-                if (!user || !codeText.trim() || anyBusy || overLimit) return
+                if (!user || !hasText || anyBusy) return
+                const freshText = editor.getText()
+                const lineCount = freshText.trim() ? freshText.split('\n').length : 0
+                const overLimit = !isAdmin && lineCount > usage.remaining
+                if (overLimit) { setAiError(`Daily limit: ${usage.remaining} lines remaining (${lineCount} lines)`); setTimeout(() => setAiError(null), 4000); return }
                 setFixingCode(true)
                 setAiError(null)
                 try {
-                  const fixed = await fixCode(codeText, noteType)
+                  const fixed = await fixCode(freshText, noteType)
                   editor.commands.setContent(fixed)
                   if (!isAdmin) addCodeFixUsage(user.id, lineCount)
                 } catch (err: any) {
@@ -600,9 +622,9 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                   setFixingCode(false)
                 }
               }}
-              disabled={anyBusy || !codeText.trim() || overLimit}
-              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingCode ? 'opacity-50 cursor-wait' : ''} ${overLimit ? 'opacity-40' : ''}`}
-              title={isAdmin ? 'Fix Code (unlimited)' : overLimit ? `Daily limit: ${usage.remaining} lines remaining (${lineCount} lines selected)` : `Fix Code (${usage.remaining} lines remaining today)`}
+              disabled={anyBusy || !hasText}
+              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingCode ? 'opacity-50 cursor-wait' : ''}`}
+              title={isAdmin ? 'Fix Code (unlimited)' : `Fix Code (${usage.remaining} lines remaining today)`}
             >
               {fixingCode ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -612,7 +634,7 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                 </svg>
               )}
               <span>{fixingCode ? 'Fixing...' : `Fix Code`}</span>
-              {!isAdmin && <span className={`text-[10px] ${overLimit ? 'text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>({usage.remaining})</span>}
+              {!isAdmin && <span className="text-[10px] text-gray-400 dark:text-gray-500">({usage.remaining})</span>}
               {isAdmin && <span className="text-[10px] text-amber-500">∞</span>}
             </button>
           )
@@ -649,3 +671,6 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
     </>
   )
 }
+
+const EditorToolbar = memo(EditorToolbarInner)
+export default EditorToolbar

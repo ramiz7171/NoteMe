@@ -223,7 +223,7 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Default View</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {settings.default_view === 'grid' ? 'Grid view' : 'List view'}
+                  {settings.default_view === 'grid' ? 'Grid view' : 'Tab view'}
                 </p>
               </div>
               <div className="flex gap-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
