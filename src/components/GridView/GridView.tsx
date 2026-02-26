@@ -8,6 +8,10 @@ interface GridViewProps {
   folders: Folder[]
   selectedNoteId: string | null
   searchQuery?: string
+  gridSelectedIds: Set<string>
+  onToggleGridSelect: (id: string) => void
+  onSelectAllGrid: () => void
+  onClearGridSelection: () => void
   onSelectNote: (note: Note) => void
   onDeleteNote: (id: string) => void
   onArchiveNote: (id: string) => void
@@ -44,6 +48,7 @@ function GridCard({
   isSelected,
   folders,
   searchQuery = '',
+  isChecked,
   onSelect,
   onDelete,
   onArchive,
@@ -51,6 +56,7 @@ function GridCard({
   onRename,
   onMoveToFolder,
   onUpdateColor,
+  onToggleSelect,
   onDragStart,
   onDragOver,
   onDrop,
@@ -61,6 +67,7 @@ function GridCard({
   isSelected: boolean
   folders: Folder[]
   searchQuery?: string
+  isChecked: boolean
   onSelect: () => void
   onDelete: () => void
   onArchive: () => void
@@ -68,6 +75,7 @@ function GridCard({
   onRename: (title: string) => void
   onMoveToFolder: (folderId: string | null) => void
   onUpdateColor: (color: string) => void
+  onToggleSelect: () => void
   onDragStart: (e: React.DragEvent) => void
   onDragOver: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent) => void
@@ -138,8 +146,20 @@ function GridCard({
         style={cardBgStyle}
         className={`group relative glass-card rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
           isSelected ? 'ring-2 ring-[var(--accent)] shadow-md' : ''
-        } ${isDragOver ? 'ring-2 ring-[var(--accent)]/50 scale-[1.03]' : ''}`}
+        } ${isDragOver ? 'ring-2 ring-[var(--accent)]/50 scale-[1.03]' : ''} ${isChecked ? 'ring-2 ring-[var(--accent)]' : ''}`}
       >
+        {/* Selection checkbox */}
+        {isChecked && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleSelect() }}
+            className="absolute top-3 left-3 z-10 w-5 h-5 rounded-md bg-[var(--accent)] flex items-center justify-center shadow-sm"
+          >
+            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        )}
+
         {/* 3-dot menu */}
         <button
           ref={menuBtnRef}
@@ -323,6 +343,16 @@ function GridCard({
             Archive
           </button>
 
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onToggleSelect() }}
+            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {isChecked ? 'Deselect' : 'Select'}
+          </button>
+
           <div className="border-t border-gray-100 dark:border-white/10 my-1" />
 
           <button
@@ -346,6 +376,10 @@ export default function GridView({
   folders,
   selectedNoteId,
   searchQuery = '',
+  gridSelectedIds,
+  onToggleGridSelect,
+  onSelectAllGrid,
+  onClearGridSelection,
   onSelectNote,
   onDeleteNote,
   onArchiveNote,
@@ -403,8 +437,31 @@ export default function GridView({
     })
   }, [])
 
+  const hasSelection = gridSelectedIds.size > 0
+  const allSelected = hasSelection && gridSelectedIds.size === notes.length
+
   return (
     <div className="h-full overflow-y-auto p-6">
+      {/* Select All / Deselect bar */}
+      {hasSelection && (
+        <div className="flex items-center gap-3 mb-4 px-1">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {gridSelectedIds.size} selected
+          </span>
+          <button
+            onClick={allSelected ? onClearGridSelection : onSelectAllGrid}
+            className="text-sm font-medium text-[var(--accent)] hover:underline"
+          >
+            {allSelected ? 'Deselect All' : 'Select All'}
+          </button>
+          <button
+            onClick={onClearGridSelection}
+            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-auto"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       {notes.length === 0 ? (
         <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
           <div className="text-center">
@@ -432,6 +489,7 @@ export default function GridView({
               isSelected={selectedNoteId === note.id}
               folders={folders}
               searchQuery={searchQuery}
+              isChecked={gridSelectedIds.has(note.id)}
               onSelect={() => onSelectNote(note)}
               onDelete={() => onDeleteNote(note.id)}
               onArchive={() => onArchiveNote(note.id)}
@@ -439,6 +497,7 @@ export default function GridView({
               onRename={(title) => onRenameNote(note.id, title)}
               onMoveToFolder={(folderId) => onMoveToFolder(note.id, folderId)}
               onUpdateColor={(color) => onUpdateColor(note.id, color)}
+              onToggleSelect={() => onToggleGridSelect(note.id)}
               onDragStart={handleDragStart(idx)}
               onDragOver={handleDragOver(idx)}
               onDrop={handleDrop(idx)}

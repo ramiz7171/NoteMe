@@ -62,7 +62,7 @@ export default function FileListView({
 }: FileListViewProps) {
   if (folders.length === 0 && files.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full animate-[fadeIn_0.2s_ease-out]">
+      <div className="flex items-center justify-center flex-1 h-full animate-[fadeIn_0.2s_ease-out]">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

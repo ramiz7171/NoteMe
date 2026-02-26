@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import TopBar from '../components/Layout/TopBar'
 import NavRail, { type NavSection } from '../components/Layout/NavRail'
 import TabBar, { type Tab } from '../components/Layout/TabBar'
@@ -30,42 +30,8 @@ export default function Dashboard() {
   const [showNewNoteModal, setShowNewNoteModal] = useState(false)
   const [navSection, setNavSection] = useState<NavSection>('notes')
   const [macOpenOrigin, setMacOpenOrigin] = useState<string>('center center')
-  const [searchOpen, setSearchOpen] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const [gridSelectedIds, setGridSelectedIds] = useState<Set<string>>(new Set())
 
-  // Close search on click outside
-  useEffect(() => {
-    if (!searchOpen) return
-    const handler = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        setSearchOpen(false)
-        if (!searchQuery) setSearchQuery('')
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [searchOpen, searchQuery])
-
-  // Focus input when search opens
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus()
-  }, [searchOpen])
-
-  // Keyboard shortcut: Ctrl/Cmd+K to toggle search
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setSearchOpen(prev => {
-          if (prev) { setSearchQuery(''); return false }
-          return true
-        })
-      }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [])
 
   // Compute noTitleCounter dynamically: find the next available "No title N"
   // Only count active notes (not deleted), so if "No title 1" is in trash, it's available
@@ -342,6 +308,23 @@ export default function Dashboard() {
     setModalNoteId(note.id)
   }, [])
 
+  const handleToggleGridSelect = useCallback((id: string) => {
+    setGridSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const handleSelectAllGrid = useCallback(() => {
+    setGridSelectedIds(new Set(filteredNotes.map(n => n.id)))
+  }, [filteredNotes])
+
+  const handleClearGridSelection = useCallback(() => {
+    setGridSelectedIds(new Set())
+  }, [])
+
   const handleRenameNote = async (id: string, title: string) => {
     await updateNote(id, { title })
     setTabs(prev => prev.map(t => t.noteId === id ? { ...t, title } : t))
@@ -438,64 +421,8 @@ export default function Dashboard() {
           />
 
           <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* Search + View toggle — top right corner */}
+          {/* View toggle — top right corner */}
           <div className="absolute top-px right-2 z-10 flex items-center gap-1.5">
-            {/* Search */}
-            <div ref={searchContainerRef} className="flex items-center">
-              <div
-                className={`flex items-center overflow-hidden rounded-lg bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 shadow-sm transition-all duration-300 ease-out ${
-                  searchOpen ? 'w-64 px-2.5 py-1' : 'w-0 border-transparent shadow-none'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Escape') {
-                      setSearchQuery('')
-                      setSearchOpen(false)
-                    }
-                  }}
-                  placeholder="Search notes..."
-                  className="w-full bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 outline-none ml-2"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => { setSearchQuery(''); searchInputRef.current?.focus() }}
-                    className="shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  if (searchOpen && !searchQuery) {
-                    setSearchOpen(false)
-                  } else {
-                    setSearchOpen(true)
-                  }
-                }}
-                className={`p-1.5 rounded-lg border transition-colors shadow-sm ${
-                  searchOpen
-                    ? 'bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30'
-                    : 'bg-white/80 dark:bg-white/10 backdrop-blur-sm border-gray-200/60 dark:border-white/10 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] text-gray-500 dark:text-gray-400'
-                }`}
-                title="Search notes"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </div>
-
             {/* View toggle — segmented control */}
             <div className="flex items-center rounded-lg bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 shadow-sm overflow-hidden">
               <button
@@ -544,6 +471,10 @@ export default function Dashboard() {
                   folders={folders}
                   selectedNoteId={currentNote?.id ?? null}
                   searchQuery={searchQuery}
+                  gridSelectedIds={gridSelectedIds}
+                  onToggleGridSelect={handleToggleGridSelect}
+                  onSelectAllGrid={handleSelectAllGrid}
+                  onClearGridSelection={handleClearGridSelection}
                   onSelectNote={handleGridSelectNote}
                   onDeleteNote={handleSidebarDelete}
                   onArchiveNote={handleArchiveNote}
