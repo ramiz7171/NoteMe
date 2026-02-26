@@ -21,6 +21,9 @@ interface GridViewProps {
   onUpdateColor: (noteId: string, color: string) => void
   onReorder: (updates: { id: string; position: number }[]) => void
   onCreateNote: () => void
+  onBulkDelete: (ids: string[]) => void
+  onBulkArchive: (ids: string[]) => void
+  onBulkMoveToFolder: (ids: string[], folderId: string | null) => void
 }
 
 function highlightText(text: string, query: string): React.ReactNode {
@@ -49,6 +52,7 @@ function GridCard({
   folders,
   searchQuery = '',
   isChecked,
+  hasAnySelection,
   onSelect,
   onDelete,
   onArchive,
@@ -68,6 +72,7 @@ function GridCard({
   folders: Folder[]
   searchQuery?: string
   isChecked: boolean
+  hasAnySelection: boolean
   onSelect: () => void
   onDelete: () => void
   onArchive: () => void
@@ -101,17 +106,33 @@ function GridCard({
         setShowFolderPicker(false)
       }
     }
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setMenuOpen(false); setShowColorPicker(false); setShowFolderPicker(false) }
+    }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('keydown', escHandler)
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escHandler) }
   }, [menuOpen])
+
+  const openMenu = (x: number, y: number) => {
+    const adjustedX = x + 220 > window.innerWidth ? x - 220 : x
+    const adjustedY = y + 320 > window.innerHeight ? y - 320 : y
+    setMenuPos({ x: adjustedX, y: adjustedY })
+    setMenuOpen(true)
+    setShowColorPicker(false)
+    setShowFolderPicker(false)
+  }
 
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setMenuPos({ x: rect.right + 4, y: rect.top })
-    setMenuOpen(!menuOpen)
-    setShowColorPicker(false)
-    setShowFolderPicker(false)
+    openMenu(rect.right + 4, rect.top)
+  }
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    openMenu(e.clientX, e.clientY)
   }
 
   const handleRename = () => {
@@ -134,6 +155,148 @@ function GridCard({
     .replace(/[#*_~`>-]/g, '')
     .trim()
 
+  const menuContent = (
+    <div
+      ref={menuRef}
+      className="fixed z-[9999] w-48 glass-panel-solid rounded-xl shadow-xl py-1 animate-[scaleIn_0.1s_ease-out]"
+      style={{ left: menuPos?.x, top: menuPos?.y }}
+    >
+      {/* Select — first item */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onToggleSelect() }}
+        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {isChecked ? 'Deselect' : 'Select'}
+      </button>
+
+      <div className="border-t border-gray-100 dark:border-white/10 my-1" />
+
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setEditTitle(note.title); setEditing(true) }}
+        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        Rename
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onPin() }}
+        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+      >
+        <svg className="w-3.5 h-3.5" fill={note.pinned ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+        </svg>
+        {note.pinned ? 'Unpin' : 'Pin'}
+      </button>
+
+      {/* Move to Folder */}
+      <div className="relative">
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowFolderPicker(!showFolderPicker); setShowColorPicker(false) }}
+          className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+          Move to Folder
+          <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        {showFolderPicker && (
+          <div className="px-2 py-1 space-y-0.5 border-t border-gray-100 dark:border-white/10">
+            {note.folder_id && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onMoveToFolder(null) }}
+                className="w-full text-left px-2 py-1 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-lg"
+              >
+                Unfiled
+              </button>
+            )}
+            {folders.map(f => (
+              <button
+                key={f.id}
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onMoveToFolder(f.id) }}
+                className={`w-full text-left px-2 py-1 text-xs rounded-lg hover:bg-gray-100/80 dark:hover:bg-white/10 ${
+                  note.folder_id === f.id ? 'text-[var(--accent)] font-medium' : 'text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                {f.name}
+              </button>
+            ))}
+            {folders.length === 0 && (
+              <p className="px-2 py-1 text-[10px] text-gray-400 italic">No folders yet</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Set Color */}
+      <div className="relative">
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); setShowFolderPicker(false) }}
+          className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+        >
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 dark:border-gray-500" style={note.color ? { backgroundColor: note.color, borderColor: note.color } : {}} />
+          Set Color
+          <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        {showColorPicker && (
+          <div className="px-3 py-2 border-t border-gray-100 dark:border-white/10">
+            <div className="flex flex-wrap gap-1.5">
+              {TAB_COLORS.map(c => (
+                <button
+                  key={c.key}
+                  onClick={(e) => { e.stopPropagation(); onUpdateColor(c.value); setMenuOpen(false) }}
+                  className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                    note.color === c.value ? 'ring-2 ring-offset-1 ring-[var(--accent)]' : ''
+                  }`}
+                  style={c.value ? { backgroundColor: c.value, borderColor: c.value } : { borderColor: '#9ca3af' }}
+                  title={c.label}
+                >
+                  {!c.value && (
+                    <svg className="w-full h-full text-gray-400" viewBox="0 0 20 20">
+                      <line x1="3" y1="3" x2="17" y2="17" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onArchive() }}
+        className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+        Archive
+      </button>
+
+      <div className="border-t border-gray-100 dark:border-white/10 my-1" />
+
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete() }}
+        className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </button>
+    </div>
+  )
+
   return (
     <>
       <div
@@ -143,28 +306,37 @@ function GridCard({
         onDrop={onDrop}
         onDragEnd={onDragEnd}
         onClick={onSelect}
+        onContextMenu={handleContextMenu}
         style={cardBgStyle}
         className={`group relative glass-card rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
           isSelected ? 'ring-2 ring-[var(--accent)] shadow-md' : ''
         } ${isDragOver ? 'ring-2 ring-[var(--accent)]/50 scale-[1.03]' : ''} ${isChecked ? 'ring-2 ring-[var(--accent)]' : ''}`}
       >
-        {/* Selection checkbox */}
-        {isChecked && (
+        {/* Selection checkbox — top right */}
+        {(isChecked || hasAnySelection) && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleSelect() }}
-            className="absolute top-3 left-3 z-10 w-5 h-5 rounded-md bg-[var(--accent)] flex items-center justify-center shadow-sm"
+            className={`absolute top-3 right-3 z-20 w-5 h-5 rounded-md flex items-center justify-center shadow-sm transition-all ${
+              isChecked
+                ? 'bg-[var(--accent)]'
+                : 'border-2 border-gray-300 dark:border-gray-500 bg-white/80 dark:bg-white/10 opacity-0 group-hover:opacity-100'
+            }`}
           >
-            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+            {isChecked && (
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </button>
         )}
 
-        {/* 3-dot menu */}
+        {/* 3-dot menu — shifts left when checkbox visible */}
         <button
           ref={menuBtnRef}
           onClick={handleMenuClick}
-          className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-all z-10"
+          className={`absolute top-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-all z-10 ${
+            hasAnySelection ? 'right-10' : 'right-3'
+          }`}
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="5" r="1.5" />
@@ -228,145 +400,7 @@ function GridCard({
       </div>
 
       {/* Dropdown menu via portal */}
-      {menuOpen && menuPos && createPortal(
-        <div
-          ref={menuRef}
-          className="fixed z-[9999] w-48 glass-panel rounded-xl shadow-xl py-1 animate-[scaleIn_0.1s_ease-out]"
-          style={{ left: menuPos.x, top: menuPos.y }}
-        >
-          <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setEditTitle(note.title); setEditing(true) }}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Rename
-          </button>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onPin() }}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
-          >
-            <svg className="w-3.5 h-3.5" fill={note.pinned ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
-            </svg>
-            {note.pinned ? 'Unpin' : 'Pin'}
-          </button>
-
-          {/* Move to Folder */}
-          <div className="relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowFolderPicker(!showFolderPicker); setShowColorPicker(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              Move to Folder
-              <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            {showFolderPicker && (
-              <div className="px-2 py-1 space-y-0.5 border-t border-gray-100 dark:border-white/10">
-                {note.folder_id && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onMoveToFolder(null) }}
-                    className="w-full text-left px-2 py-1 text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-lg"
-                  >
-                    Unfiled
-                  </button>
-                )}
-                {folders.map(f => (
-                  <button
-                    key={f.id}
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onMoveToFolder(f.id) }}
-                    className={`w-full text-left px-2 py-1 text-xs rounded-lg hover:bg-gray-100/80 dark:hover:bg-white/10 ${
-                      note.folder_id === f.id ? 'text-[var(--accent)] font-medium' : 'text-gray-600 dark:text-gray-400'
-                    }`}
-                  >
-                    {f.name}
-                  </button>
-                ))}
-                {folders.length === 0 && (
-                  <p className="px-2 py-1 text-[10px] text-gray-400 italic">No folders yet</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Set Color */}
-          <div className="relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); setShowFolderPicker(false) }}
-              className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
-            >
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 dark:border-gray-500" style={note.color ? { backgroundColor: note.color, borderColor: note.color } : {}} />
-              Set Color
-              <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            {showColorPicker && (
-              <div className="px-3 py-2 border-t border-gray-100 dark:border-white/10">
-                <div className="flex flex-wrap gap-1.5">
-                  {TAB_COLORS.map(c => (
-                    <button
-                      key={c.key}
-                      onClick={(e) => { e.stopPropagation(); onUpdateColor(c.value); setMenuOpen(false) }}
-                      className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                        note.color === c.value ? 'ring-2 ring-offset-1 ring-[var(--accent)]' : ''
-                      }`}
-                      style={c.value ? { backgroundColor: c.value, borderColor: c.value } : { borderColor: '#9ca3af' }}
-                      title={c.label}
-                    >
-                      {!c.value && (
-                        <svg className="w-full h-full text-gray-400" viewBox="0 0 20 20">
-                          <line x1="3" y1="3" x2="17" y2="17" stroke="currentColor" strokeWidth="2" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onArchive() }}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-            Archive
-          </button>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onToggleSelect() }}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 flex items-center gap-2"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {isChecked ? 'Deselect' : 'Select'}
-          </button>
-
-          <div className="border-t border-gray-100 dark:border-white/10 my-1" />
-
-          <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete() }}
-            className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Delete
-          </button>
-        </div>,
-        document.body
-      )}
+      {menuOpen && menuPos && createPortal(menuContent, document.body)}
     </>
   )
 }
@@ -389,15 +423,38 @@ export default function GridView({
   onUpdateColor,
   onReorder,
   onCreateNote,
+  onBulkDelete,
+  onBulkArchive,
 }: GridViewProps) {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Ctrl+A to select all, Escape to clear, Delete to bulk delete
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!containerRef.current?.contains(document.activeElement) &&
+          document.activeElement !== containerRef.current) return
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault()
+        onSelectAllGrid()
+      }
+      if (e.key === 'Escape' && gridSelectedIds.size > 0) {
+        onClearGridSelection()
+      }
+      if (e.key === 'Delete' && gridSelectedIds.size > 0) {
+        onBulkDelete(Array.from(gridSelectedIds))
+        onClearGridSelection()
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onSelectAllGrid, onClearGridSelection, onBulkDelete, gridSelectedIds])
 
   const handleDragStart = useCallback((idx: number) => (e: React.DragEvent) => {
     setDragIdx(idx)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(idx))
-    // Make the dragged element semi-transparent
     const el = e.currentTarget as HTMLElement
     requestAnimationFrame(() => { el.style.opacity = '0.4' })
   }, [])
@@ -431,7 +488,6 @@ export default function GridView({
   const handleDragEnd = useCallback(() => {
     setDragIdx(null)
     setDragOverIdx(null)
-    // Restore opacity on all cards
     document.querySelectorAll('[draggable="true"]').forEach(el => {
       (el as HTMLElement).style.opacity = '1'
     })
@@ -441,11 +497,11 @@ export default function GridView({
   const allSelected = hasSelection && gridSelectedIds.size === notes.length
 
   return (
-    <div className="h-full overflow-y-auto pt-10 px-6 pb-6">
-      {/* Select All / Deselect bar */}
+    <div ref={containerRef} tabIndex={0} className="h-full overflow-y-auto pt-10 px-6 pb-6 outline-none">
+      {/* Selection action bar */}
       {hasSelection && (
-        <div className="flex items-center gap-3 mb-4 px-1">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center gap-3 mb-4 px-1 flex-wrap">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {gridSelectedIds.size} selected
           </span>
           <button
@@ -454,12 +510,27 @@ export default function GridView({
           >
             {allSelected ? 'Deselect All' : 'Select All'}
           </button>
-          <button
-            onClick={onClearGridSelection}
-            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-auto"
-          >
-            Cancel
-          </button>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => { onBulkArchive(Array.from(gridSelectedIds)); onClearGridSelection() }}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+            >
+              Archive All
+            </button>
+            <button
+              onClick={() => { onBulkDelete(Array.from(gridSelectedIds)); onClearGridSelection() }}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >
+              Delete All
+            </button>
+            <button
+              onClick={onClearGridSelection}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
       {notes.length === 0 ? (
@@ -490,6 +561,7 @@ export default function GridView({
               folders={folders}
               searchQuery={searchQuery}
               isChecked={gridSelectedIds.has(note.id)}
+              hasAnySelection={hasSelection}
               onSelect={() => onSelectNote(note)}
               onDelete={() => onDeleteNote(note.id)}
               onArchive={() => onArchiveNote(note.id)}
