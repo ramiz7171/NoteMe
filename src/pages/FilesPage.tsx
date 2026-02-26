@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useFiles } from '../hooks/useFiles'
 import FileShareHeader from '../components/FileShare/FileShareHeader'
 import FileGridView from '../components/FileShare/FileGridView'
@@ -25,6 +25,68 @@ export default function FilesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
+
+  // Navigation history (browser-like back/forward)
+  const [navHistory, setNavHistory] = useState<(string | null)[]>([null])
+  const [navIndex, setNavIndex] = useState(0)
+  const navLock = useRef(false) // prevents history push during back/forward
+
+  const canGoBack = navIndex > 0
+  const canGoForward = navIndex < navHistory.length - 1
+
+  // Keep history in sync when navigating normally
+  useEffect(() => {
+    if (navLock.current) {
+      navLock.current = false
+      return
+    }
+    setNavHistory(prev => {
+      const trimmed = prev.slice(0, navIndex + 1)
+      if (trimmed[trimmed.length - 1] === currentFolderId) return trimmed
+      return [...trimmed, currentFolderId]
+    })
+    setNavIndex(prev => {
+      const trimmed = navHistory.slice(0, prev + 1)
+      if (trimmed[trimmed.length - 1] === currentFolderId) return prev
+      return trimmed.length
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFolderId])
+
+  const goBack = useCallback(() => {
+    if (navIndex <= 0) return
+    const prevIdx = navIndex - 1
+    navLock.current = true
+    setNavIndex(prevIdx)
+    setCurrentFolderId(navHistory[prevIdx])
+    setSelectedItems(new Set())
+    setSearchQuery('')
+  }, [navIndex, navHistory])
+
+  const goForward = useCallback(() => {
+    if (navIndex >= navHistory.length - 1) return
+    const nextIdx = navIndex + 1
+    navLock.current = true
+    setNavIndex(nextIdx)
+    setCurrentFolderId(navHistory[nextIdx])
+    setSelectedItems(new Set())
+    setSearchQuery('')
+  }, [navIndex, navHistory])
+
+  const goUp = useCallback(() => {
+    if (!currentFolderId) return
+    const current = fileFolders.find(f => f.id === currentFolderId)
+    setCurrentFolderId(current?.parent_folder_id ?? null)
+    setSelectedItems(new Set())
+    setSearchQuery('')
+  }, [currentFolderId, fileFolders])
+
+  const handleRefresh = useCallback(() => {
+    // Force re-fetch by toggling folder ID
+    const id = currentFolderId
+    setCurrentFolderId(undefined as unknown as string | null)
+    requestAnimationFrame(() => setCurrentFolderId(id))
+  }, [currentFolderId])
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'file' | 'folder'; id: string } | null>(null)
   const [previewFileId, setPreviewFileId] = useState<string | null>(null)
   const [shareFileId, setShareFileId] = useState<string | null>(null)
@@ -221,6 +283,13 @@ export default function FilesPage() {
         onNewFolder={() => setShowNewFolderModal(true)}
         onUploadFiles={handleUploadFiles}
         onNavigate={handleNavigate}
+        currentFolderId={currentFolderId}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onGoBack={goBack}
+        onGoForward={goForward}
+        onGoUp={goUp}
+        onRefresh={handleRefresh}
       />
 
       <main className="flex-1 flex flex-col overflow-y-auto" onClick={() => setSelectedItems(new Set())}>

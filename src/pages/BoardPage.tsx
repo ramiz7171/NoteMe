@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react'
 import getStroke from 'perfect-freehand'
 import TabBar, { type Tab } from '../components/Layout/TabBar'
 import { getSvgPathFromStroke, getStrokeOptions, renderStroke, renderAllStrokes, type StrokeData } from '../lib/drawUtils'
@@ -58,10 +58,14 @@ const TOOL_TITLES: Record<Tool, string> = {
 
 /* ─── BoardCanvas ─────────────────────────────────────────────────── */
 
-function BoardCanvas({ board, onSave }: { board: Note; onSave: (boardId: string, strokes: StrokeData[]) => void }) {
+const BoardCanvas = memo(function BoardCanvas({ board, onSave }: { board: Note; onSave: (boardId: string, strokes: StrokeData[]) => void }) {
   const mainCanvasRef = useRef<HTMLCanvasElement>(null)
   const activeCanvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Stable ref for onSave to avoid re-render cycles from realtime updates
+  const onSaveRef = useRef(onSave)
+  onSaveRef.current = onSave
 
   const [tool, setTool] = useState<Tool>('pen')
   const [color, setColor] = useState('#000000')
@@ -81,24 +85,26 @@ function BoardCanvas({ board, onSave }: { board: Note; onSave: (boardId: string,
 
   useEffect(() => { strokesRef.current = strokes }, [strokes])
 
-  // Auto-save with debounce
+  // Auto-save with debounce — uses ref to avoid re-render cycles
+  const boardIdRef = useRef(board.id)
+  boardIdRef.current = board.id
+
   const triggerSave = useCallback(() => {
     clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
-      onSave(board.id, strokesRef.current)
+      onSaveRef.current(boardIdRef.current, strokesRef.current)
     }, 500)
-  }, [board.id, onSave])
+  }, [])
 
   // Cleanup timer on unmount — flush save
   useEffect(() => {
     return () => {
       clearTimeout(saveTimerRef.current)
-      // Save on unmount if there are strokes
       if (strokesRef.current.length > 0) {
-        onSave(board.id, strokesRef.current)
+        onSaveRef.current(boardIdRef.current, strokesRef.current)
       }
     }
-  }, [board.id, onSave])
+  }, [])
 
   // Setup canvases
   useEffect(() => {
@@ -494,7 +500,7 @@ function BoardCanvas({ board, onSave }: { board: Note; onSave: (boardId: string,
       )}
     </div>
   )
-}
+}, (prev, next) => prev.board.id === next.board.id)
 
 /* ─── Board List Item ─────────────────────────────────────────────── */
 
