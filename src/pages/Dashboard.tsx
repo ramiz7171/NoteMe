@@ -496,25 +496,41 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* View toggle */}
-            <button
-              onClick={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
-              className="p-1.5 rounded-lg bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] text-gray-500 dark:text-gray-400 transition-colors shadow-sm"
-              title={viewMode === 'list' ? 'Grid view' : 'Tab view'}
-            >
-              {viewMode === 'list' ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {/* View toggle — segmented control */}
+            <div className="flex items-center rounded-lg bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 shadow-sm overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-[var(--accent)]/15 text-[var(--accent)]'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <rect x="3" y="3" width="7" height="7" rx="1" />
                   <rect x="14" y="3" width="7" height="7" rx="1" />
                   <rect x="3" y="14" width="7" height="7" rx="1" />
                   <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+                Grid
+              </button>
+              <div className="w-px h-4 bg-gray-200/60 dark:bg-white/10" />
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-[var(--accent)]/15 text-[var(--accent)]'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <rect x="2" y="3" width="20" height="4" rx="1" />
+                  <rect x="2" y="10" width="12" height="4" rx="1" />
+                  <rect x="2" y="17" width="16" height="4" rx="1" />
                 </svg>
-              )}
-            </button>
+                Tab
+              </button>
+            </div>
           </div>
           {viewMode === 'grid' ? (
             <main className="flex-1 overflow-hidden">
