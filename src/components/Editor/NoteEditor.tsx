@@ -105,7 +105,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const lastSavedContentRef = useRef<string | null>(null)
   const lastSavedTitleRef = useRef<string | null>(null)
   const lastSavedTypeRef = useRef<NoteType | null>(null)
-  const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex })
+  const latestRef = useRef({ title, content: '', noteType, note, isNew, noTitleIndex, contentDirty: false })
 
   const autoSaveRef = useRef(autoSave)
   autoSaveRef.current = autoSave
@@ -145,6 +145,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     }, 800)
   }, [note, isNew, onUpdate, noTitleIndex])
 
+  const updateRafRef = useRef<number | null>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -179,27 +181,39 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     content: getInitialContent(note, isNew),
     editable: true,
     onUpdate: ({ editor: ed }) => {
-      const html = ed.getHTML()
-      const text = ed.getText()
-      latestRef.current.content = html
-      setHasContent(!!text.trim())
-      if (!latestRef.current.isNew && latestRef.current.note) {
-        const n = latestRef.current.note
-        setHasChanges(html !== n.content || latestRef.current.title !== n.title || latestRef.current.noteType !== n.note_type)
-        handleAutoSave(latestRef.current.title, html, latestRef.current.noteType)
-      }
+      // Mark content as dirty immediately (cheap flag)
+      latestRef.current.contentDirty = true
+      // Defer expensive serialization to next animation frame
+      if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current)
+      updateRafRef.current = requestAnimationFrame(() => {
+        updateRafRef.current = null
+        const html = ed.getHTML()
+        const text = ed.getText()
+        latestRef.current.content = html
+        latestRef.current.contentDirty = false
+        setHasContent(!!text.trim())
+        if (!latestRef.current.isNew && latestRef.current.note) {
+          const n = latestRef.current.note
+          setHasChanges(html !== n.content || latestRef.current.title !== n.title || latestRef.current.noteType !== n.note_type)
+          handleAutoSave(latestRef.current.title, html, latestRef.current.noteType)
+        }
+      })
     },
   })
 
-  // Keep latestRef in sync
+  // Clean up RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current)
+    }
+  }, [])
+
+  // Keep latestRef in sync (without expensive getHTML)
   latestRef.current.title = title
   latestRef.current.noteType = noteType
   latestRef.current.note = note
   latestRef.current.isNew = isNew
   latestRef.current.noTitleIndex = noTitleIndex
-  if (editor) {
-    latestRef.current.content = editor.getHTML()
-  }
 
   // Sync external note changes (from other tabs/sessions only)
   useEffect(() => {
@@ -252,7 +266,13 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+      if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current)
       if (!autoSaveRef.current) return
+      // Flush any pending content from the editor before saving
+      if (latestRef.current.contentDirty && editor) {
+        latestRef.current.content = editor.getHTML()
+        latestRef.current.contentDirty = false
+      }
       const { title: t, content: c, noteType: nt, note: n, isNew: isN, noTitleIndex: idx } = latestRef.current
       if (n && !isN) {
         const updates: { title?: string; content?: string; note_type?: NoteType } = {}
@@ -274,8 +294,9 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     setTitle(val)
     onTitleChange?.(val)
     if (!isNew && note && editor) {
-      setHasChanges(val !== note.title || editor.getHTML() !== note.content || noteType !== note.note_type)
-      handleAutoSave(val, editor.getHTML(), noteType)
+      const html = latestRef.current.content || editor.getHTML()
+      setHasChanges(val !== note.title || html !== note.content || noteType !== note.note_type)
+      handleAutoSave(val, html, noteType)
     }
   }
 
@@ -297,8 +318,9 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
       }
     }
     if (!isNew && note && editor) {
-      setHasChanges(title !== note.title || editor.getHTML() !== note.content || val !== note.note_type)
-      handleAutoSave(title, editor.getHTML(), val)
+      const html = latestRef.current.content || editor.getHTML()
+      setHasChanges(title !== note.title || html !== note.content || val !== note.note_type)
+      handleAutoSave(title, html, val)
     }
   }
 

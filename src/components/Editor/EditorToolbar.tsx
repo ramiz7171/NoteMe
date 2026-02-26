@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import type { Editor } from '@tiptap/react'
 import { FONT_SIZES } from './extensions/FontSize'
 import LinkModal from './modals/LinkModal'
@@ -41,7 +41,7 @@ interface EditorToolbarProps {
   noteType: NoteType
 }
 
-export default function EditorToolbar({ editor, title, noteType }: EditorToolbarProps) {
+function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
   const { user, profile } = useAuth()
   const isAdmin = profile?.is_admin === true
   const [showLinkModal, setShowLinkModal] = useState(false)
@@ -57,6 +57,26 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
   const [aiError, setAiError] = useState<string | null>(null)
   const [showAIWriterModal, setShowAIWriterModal] = useState(false)
   const [showEmojiMenu, setShowEmojiMenu] = useState(false)
+
+  // Cache editor text to avoid calling editor.getText() multiple times per render.
+  // Updated on a debounced schedule via the editor's 'update' event.
+  const [cachedText, setCachedText] = useState(() => editor.getText())
+  const textRafRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const handler = () => {
+      if (textRafRef.current) cancelAnimationFrame(textRafRef.current)
+      textRafRef.current = requestAnimationFrame(() => {
+        textRafRef.current = null
+        setCachedText(editor.getText())
+      })
+    }
+    editor.on('update', handler)
+    return () => {
+      editor.off('update', handler)
+      if (textRafRef.current) cancelAnimationFrame(textRafRef.current)
+    }
+  }, [editor])
 
   const toolbarRef = useRef<HTMLDivElement>(null)
   const tableButtonRef = useRef<HTMLButtonElement>(null)
@@ -483,10 +503,9 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
         {/* ── AI Summarize ── */}
         {(() => {
           const sumUsage = user ? getDailyUsage('summarize', user.id, AI_LIMITS.summarize.daily) : { remaining: 0 }
-          const text = editor.getText()
-          const tooLong = !isAdmin && text.length > AI_LIMITS.summarize.maxChars
+          const tooLong = !isAdmin && cachedText.length > AI_LIMITS.summarize.maxChars
           const noUses = !isAdmin && sumUsage.remaining <= 0
-          const disabled = summarizing || fixingGrammar || fixingCode || !text.trim() || noUses || tooLong
+          const disabled = summarizing || fixingGrammar || fixingCode || !cachedText.trim() || noUses || tooLong
           return (
             <button
               onClick={async () => {
@@ -494,6 +513,7 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                 setSummarizing(true)
                 setAiError(null)
                 try {
+                  const text = editor.getText()
                   const summary = await summarizeText(text)
                   editor.chain().focus().insertContentAt(0, [
                     { type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'AI Summary: ' }, { type: 'text', text: summary }] }] },
@@ -531,10 +551,10 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
           const gramUsage = user ? getDailyUsage('grammar', user.id, AI_LIMITS.grammar.daily) : { remaining: 0 }
           const { from, to } = editor.state.selection
           const hasSelection = from !== to
-          const gramText = hasSelection ? editor.state.doc.textBetween(from, to, ' ') : editor.getText()
+          const gramText = hasSelection ? editor.state.doc.textBetween(from, to, ' ') : cachedText
           const tooLong = !isAdmin && gramText.length > AI_LIMITS.grammar.maxChars
           const noUses = !isAdmin && gramUsage.remaining <= 0
-          const disabled = fixingGrammar || summarizing || fixingCode || !editor.getText().trim() || noUses || tooLong
+          const disabled = fixingGrammar || summarizing || fixingCode || !cachedText.trim() || noUses || tooLong
           return (
             <button
               onClick={async () => {
@@ -542,9 +562,13 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                 setFixingGrammar(true)
                 setAiError(null)
                 try {
-                  const fixed = await fixGrammar(gramText)
-                  if (hasSelection) {
-                    editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, fixed).run()
+                  // Get fresh text/selection at click time
+                  const { from: f, to: t } = editor.state.selection
+                  const hasSel = f !== t
+                  const freshGramText = hasSel ? editor.state.doc.textBetween(f, t, ' ') : editor.getText()
+                  const fixed = await fixGrammar(freshGramText)
+                  if (hasSel) {
+                    editor.chain().focus().deleteRange({ from: f, to: t }).insertContentAt(f, fixed).run()
                   } else {
                     editor.commands.setContent(fixed)
                   }
@@ -578,20 +602,21 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
         {/* ── AI Fix Code (only for programming language note types) ── */}
         {CODE_TYPES.includes(noteType) && (() => {
           const usage = user ? getCodeFixUsage(user.id) : { used: 0, remaining: 0 }
-          const codeText = editor.getText()
-          const lineCount = codeText.trim() ? codeText.split('\n').length : 0
+          const lineCount = cachedText.trim() ? cachedText.split('\n').length : 0
           const overLimit = !isAdmin && lineCount > usage.remaining
           const anyBusy = fixingCode || summarizing || fixingGrammar
           return (
             <button
               onClick={async () => {
-                if (!user || !codeText.trim() || anyBusy || overLimit) return
+                if (!user || !cachedText.trim() || anyBusy || overLimit) return
                 setFixingCode(true)
                 setAiError(null)
                 try {
-                  const fixed = await fixCode(codeText, noteType)
+                  const freshText = editor.getText()
+                  const fixed = await fixCode(freshText, noteType)
                   editor.commands.setContent(fixed)
-                  if (!isAdmin) addCodeFixUsage(user.id, lineCount)
+                  const freshLineCount = freshText.trim() ? freshText.split('\n').length : 0
+                  if (!isAdmin) addCodeFixUsage(user.id, freshLineCount)
                 } catch (err: any) {
                   const msg = err?.message || ''
                   setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : 'Code fix failed')
@@ -600,7 +625,7 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
                   setFixingCode(false)
                 }
               }}
-              disabled={anyBusy || !codeText.trim() || overLimit}
+              disabled={anyBusy || !cachedText.trim() || overLimit}
               className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingCode ? 'opacity-50 cursor-wait' : ''} ${overLimit ? 'opacity-40' : ''}`}
               title={isAdmin ? 'Fix Code (unlimited)' : overLimit ? `Daily limit: ${usage.remaining} lines remaining (${lineCount} lines selected)` : `Fix Code (${usage.remaining} lines remaining today)`}
             >
@@ -649,3 +674,6 @@ export default function EditorToolbar({ editor, title, noteType }: EditorToolbar
     </>
   )
 }
+
+const EditorToolbar = memo(EditorToolbarInner)
+export default EditorToolbar
