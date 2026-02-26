@@ -305,7 +305,7 @@ function GridCard({
         onDragOver={onDragOver}
         onDrop={onDrop}
         onDragEnd={onDragEnd}
-        onClick={onSelect}
+        onClick={hasAnySelection ? (e) => { e.stopPropagation(); onToggleSelect() } : onSelect}
         onContextMenu={handleContextMenu}
         style={cardBgStyle}
         className={`group relative glass-card rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] ${

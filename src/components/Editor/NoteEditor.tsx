@@ -94,10 +94,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const [title, setTitle] = useState(note?.title ?? '')
   const [noteType, setNoteType] = useState<NoteType>(note?.note_type ?? 'basic')
   const [saving, setSaving] = useState(false)
-  const [autoSave, setAutoSave] = useState(() => {
-    const stored = localStorage.getItem('noteme-autosave')
-    return stored === null ? true : stored === 'true'
-  })
+  const [autoSave, setAutoSave] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
   const [hasContent, setHasContent] = useState(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
