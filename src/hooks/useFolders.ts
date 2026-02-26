@@ -62,6 +62,15 @@ export function useFolders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchFolders()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [fetchFolders])
+
   const createFolder = async (name: string) => {
     if (!user) return
     const { error } = await supabase.from('folders').insert({

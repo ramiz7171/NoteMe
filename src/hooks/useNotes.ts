@@ -63,6 +63,15 @@ export function useNotes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchNotes()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [fetchNotes])
+
   const createNote = async (title: string, content: string, noteType: NoteType) => {
     if (!user) return { error: new Error('Not authenticated') }
     const { data, error } = await supabase.from('notes').insert({
