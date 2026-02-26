@@ -106,7 +106,7 @@ function GridCard({
   } : {}
 
   // Strip HTML/markdown for preview
-  const plainContent = note.content
+  const plainContent = (note.content || '')
     .replace(/<[^>]+>/g, '')
     .replace(/[#*_~`>-]/g, '')
     .trim()

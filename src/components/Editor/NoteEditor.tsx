@@ -188,7 +188,8 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
       FontSize,
       AudioNode,
     ],
-    content: getInitialContent(note, isNew),
+    // Start empty — large content is loaded asynchronously after mount to avoid blocking the UI
+    content: '',
     editable: true,
     onUpdate: ({ editor: ed }) => {
       // All O(1) operations — no getHTML() or getText() here
@@ -202,6 +203,22 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
     },
   })
   editorRef.current = editor
+
+  // Load initial content asynchronously to avoid blocking the UI on mount
+  const initialContentLoadedRef = useRef(false)
+  useEffect(() => {
+    if (editor && !initialContentLoadedRef.current) {
+      initialContentLoadedRef.current = true
+      const initialContent = getInitialContent(note, isNew)
+      if (initialContent) {
+        // Use requestAnimationFrame so the editor shell renders first
+        requestAnimationFrame(() => {
+          editor.commands.setContent(initialContent, { emitUpdate: false })
+          latestRef.current.content = initialContent
+        })
+      }
+    }
+  }, [editor])
 
   // Keep latestRef in sync (no serialization — just cheap ref assignments)
   latestRef.current.title = title
