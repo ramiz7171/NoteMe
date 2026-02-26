@@ -63,12 +63,12 @@ body {
 
 /* ── Accent colors ── */
 :root {
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --accent: #7686FF;
+  --accent-hover: #5a6be6;
 }
 .dark {
-  --accent: #60a5fa;
-  --accent-hover: #3b82f6;
+  --accent: #7686FF;
+  --accent-hover: #8e9bff;
 }
 
 /* ── highlight.js dark mode overrides ── */
