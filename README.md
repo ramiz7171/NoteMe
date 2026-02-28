@@ -1,4 +1,4 @@
-# NoteMe
+# CriptNote
 
 A modern note-taking app with code syntax highlighting support. Built with React, TypeScript, Vite, Tailwind CSS, and Supabase.
 
@@ -29,8 +29,8 @@ A modern note-taking app with code syntax highlighting support. Built with React
 ### Installation
 
 ```bash
-git clone https://github.com/ramiz7171/NoteMe.git
-cd NoteMe
+git clone https://github.com/ramiz7171/criptnote.git
+cd criptnote
 npm install
 ```
 

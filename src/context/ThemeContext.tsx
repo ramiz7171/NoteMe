@@ -11,12 +11,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('noteme-theme')
+    const stored = localStorage.getItem('criptnote-theme')
     return (stored as Theme) || 'light'
   })
 
   useEffect(() => {
-    localStorage.setItem('noteme-theme', theme)
+    localStorage.setItem('criptnote-theme', theme)
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {

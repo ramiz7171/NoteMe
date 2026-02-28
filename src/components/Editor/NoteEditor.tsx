@@ -111,7 +111,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   const toggleAutoSave = useCallback(() => {
     setAutoSave(prev => {
       const next = !prev
-      localStorage.setItem('noteme-autosave', String(next))
+      localStorage.setItem('criptnote-autosave', String(next))
       // If turning off, cancel any pending auto-save
       if (!next && saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)

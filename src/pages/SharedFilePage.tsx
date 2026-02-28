@@ -116,7 +116,7 @@ export default function SharedFilePage() {
       <header className="shrink-0 px-6 py-4 border-b border-gray-200/50 dark:border-white/5 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-gray-900 dark:text-white">NoteMe</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">CriptNote</span>
             <span className="text-xs text-gray-400">Shared File</span>
           </div>
           <button
