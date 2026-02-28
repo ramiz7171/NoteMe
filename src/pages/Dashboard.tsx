@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [navSection, setNavSection] = useState<NavSection>('notes')
   const [macOpenOrigin, setMacOpenOrigin] = useState<string>('center center')
   const [gridSelectedIds, setGridSelectedIds] = useState<Set<string>>(new Set())
-
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Compute noTitleCounter dynamically: find the next available "No title N"
   // Only count active notes (not deleted), so if "No title 1" is in trash, it's available
@@ -370,12 +370,25 @@ export default function Dashboard() {
     return result
   }
 
+  // Close mobile sidebar when selecting a note
+  const handleMobileSelectNote = useCallback((note: Note) => {
+    if (viewMode === 'grid') {
+      handleGridSelectNote(note)
+    } else {
+      openNoteInTab(note)
+    }
+    setMobileSidebarOpen(false)
+  }, [viewMode, handleGridSelectNote, openNoteInTab])
+
   return (
     <div className="h-screen flex flex-col bg-app-gradient">
-      <TopBar />
+      <TopBar
+        onToggleMobileSidebar={() => setMobileSidebarOpen(prev => !prev)}
+        showMobileMenuBtn={navSection === 'notes'}
+      />
 
-      <div className="flex flex-1 overflow-hidden">
-        <NavRail active={navSection} onChange={setNavSection} />
+      <div className="flex flex-1 overflow-hidden pb-14 md:pb-0">
+        <NavRail active={navSection} onChange={(s) => { setNavSection(s); setMobileSidebarOpen(false) }} />
 
         {navSection === 'transcript' && <TranscriptPage />}
         {navSection === 'meetings' && <MeetingsPage />}
@@ -392,42 +405,89 @@ export default function Dashboard() {
         {navSection === 'settings' && <SettingsPage />}
 
         {navSection === 'notes' && <>
-          <Sidebar
-            basicNotes={basicNotes}
-            boardNotes={boardNotes}
-            codeNotes={codeNotes}
-            archivedNotes={archivedNotes}
-            deletedNotes={deletedNotes}
-            selectedNoteId={currentNote?.id ?? null}
-            onSelectNote={viewMode === 'grid' ? handleGridSelectNote : openNoteInTab}
-            onDeleteNote={handleSidebarDelete}
-            onArchiveNote={handleArchiveNote}
-            onUnarchiveNote={handleUnarchiveNote}
-            onPinNote={handlePinNote}
-            onRenameNote={handleRenameNote}
-            onPermanentDelete={handlePermanentDelete}
-            onPermanentDeleteAll={handlePermanentDeleteAll}
-            onRestoreNote={handleRestoreNote}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            folders={folders}
-            folderNotes={folderNotes}
-            onCreateFolder={async (name) => { await createFolder(name) }}
-            onRenameFolder={async (id, name) => { await renameFolder(id, name) }}
-            onDeleteFolder={async (id) => { await deleteFolder(id) }}
-            onMoveToFolder={handleMoveToFolder}
-            onBulkMoveToFolder={handleBulkMoveToFolder}
-            onBulkDelete={handleBulkDelete}
-            onBulkArchive={handleBulkArchive}
-            onNewNote={viewMode === 'grid' ? (_e: React.MouseEvent) => setShowNewNoteModal(true) : openNewTabAnimated}
-            viewMode={viewMode}
-            onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
-            isHidden={false}
-          />
+          {/* Desktop sidebar */}
+          <div className="hidden md:block">
+            <Sidebar
+              basicNotes={basicNotes}
+              boardNotes={boardNotes}
+              codeNotes={codeNotes}
+              archivedNotes={archivedNotes}
+              deletedNotes={deletedNotes}
+              selectedNoteId={currentNote?.id ?? null}
+              onSelectNote={viewMode === 'grid' ? handleGridSelectNote : openNoteInTab}
+              onDeleteNote={handleSidebarDelete}
+              onArchiveNote={handleArchiveNote}
+              onUnarchiveNote={handleUnarchiveNote}
+              onPinNote={handlePinNote}
+              onRenameNote={handleRenameNote}
+              onPermanentDelete={handlePermanentDelete}
+              onPermanentDeleteAll={handlePermanentDeleteAll}
+              onRestoreNote={handleRestoreNote}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              folders={folders}
+              folderNotes={folderNotes}
+              onCreateFolder={async (name) => { await createFolder(name) }}
+              onRenameFolder={async (id, name) => { await renameFolder(id, name) }}
+              onDeleteFolder={async (id) => { await deleteFolder(id) }}
+              onMoveToFolder={handleMoveToFolder}
+              onBulkMoveToFolder={handleBulkMoveToFolder}
+              onBulkDelete={handleBulkDelete}
+              onBulkArchive={handleBulkArchive}
+              onNewNote={viewMode === 'grid' ? (_e: React.MouseEvent) => setShowNewNoteModal(true) : openNewTabAnimated}
+              viewMode={viewMode}
+              onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
+              isHidden={false}
+            />
+          </div>
+
+          {/* Mobile sidebar drawer */}
+          {mobileSidebarOpen && (
+            <div className="md:hidden fixed inset-0 z-[100]">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setMobileSidebarOpen(false)}
+              />
+              <div className="absolute inset-y-0 left-0 w-[85vw] max-w-[320px] animate-[slideDrawerIn_0.25s_ease-out]">
+                <Sidebar
+                  basicNotes={basicNotes}
+                  boardNotes={boardNotes}
+                  codeNotes={codeNotes}
+                  archivedNotes={archivedNotes}
+                  deletedNotes={deletedNotes}
+                  selectedNoteId={currentNote?.id ?? null}
+                  onSelectNote={handleMobileSelectNote}
+                  onDeleteNote={handleSidebarDelete}
+                  onArchiveNote={handleArchiveNote}
+                  onUnarchiveNote={handleUnarchiveNote}
+                  onPinNote={handlePinNote}
+                  onRenameNote={handleRenameNote}
+                  onPermanentDelete={handlePermanentDelete}
+                  onPermanentDeleteAll={handlePermanentDeleteAll}
+                  onRestoreNote={handleRestoreNote}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  folders={folders}
+                  folderNotes={folderNotes}
+                  onCreateFolder={async (name) => { await createFolder(name) }}
+                  onRenameFolder={async (id, name) => { await renameFolder(id, name) }}
+                  onDeleteFolder={async (id) => { await deleteFolder(id) }}
+                  onMoveToFolder={handleMoveToFolder}
+                  onBulkMoveToFolder={handleBulkMoveToFolder}
+                  onBulkDelete={handleBulkDelete}
+                  onBulkArchive={handleBulkArchive}
+                  onNewNote={(e) => { setShowNewNoteModal(true); setMobileSidebarOpen(false); e.stopPropagation() }}
+                  viewMode={viewMode}
+                  onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
+                  isHidden={false}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* View toggle — top right corner */}
-          <div className="absolute top-px right-2 z-10 flex items-center gap-1.5">
+          {/* View toggle — top right corner (hidden on mobile, use sidebar toggle instead) */}
+          <div className="absolute top-px right-2 z-10 hidden md:flex items-center gap-1.5">
             {/* View toggle — segmented control */}
             <div className="flex items-center rounded-lg bg-white/80 dark:bg-white/10 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 shadow-sm overflow-hidden">
               <button
@@ -583,7 +643,7 @@ export default function Dashboard() {
           onClick={(e) => { if (e.target === e.currentTarget && (e.currentTarget as any).__mouseDownTarget === e.currentTarget) setShowNewNoteModal(false) }}
         >
           <div
-            className="w-[95vw] max-w-6xl h-[80vh] glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-[scaleIn_0.15s_ease-out]"
+            className="w-[95vw] max-w-6xl h-[90vh] md:h-[80vh] glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-[scaleIn_0.15s_ease-out]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-gray-200/50 dark:border-white/5">

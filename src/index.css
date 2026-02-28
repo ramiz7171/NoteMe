@@ -148,6 +148,24 @@ body {
   border: none !important;
 }
 
+/* ── Mobile sidebar drawer ── */
+@keyframes slideDrawerIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slideDrawerOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* ── Mobile bottom nav ── */
+@media (max-width: 767px) {
+  /* Safe area for bottom nav on notch phones */
+  .mobile-bottom-nav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
 /* ── Scrollbar styling ── */
 .dark ::-webkit-scrollbar {
   width: 6px;

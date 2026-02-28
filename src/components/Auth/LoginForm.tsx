@@ -58,7 +58,7 @@ export default function LoginForm() {
           </p>
         </div>
 
-        <div className="glass-panel rounded-2xl p-8 shadow-xl">
+        <div className="glass-panel rounded-2xl p-5 sm:p-8 shadow-xl">
           {/* Mode Tabs */}
           <div className="flex gap-1 mb-6 bg-gray-100/80 dark:bg-white/5 rounded-xl p-1">
             {([['login', 'Sign In'], ['signup', 'Sign Up'], ['magic-link', 'Magic Link']] as const).map(([key, label]) => (
@@ -85,7 +85,7 @@ export default function LoginForm() {
                 <input
                   type="text"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={e => setUsername(e.target.value.toLowerCase())}
                   required
                   className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
                   placeholder="Choose a username"

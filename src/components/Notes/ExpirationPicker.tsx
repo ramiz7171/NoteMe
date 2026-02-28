@@ -40,33 +40,42 @@ function currentOption(value: string | null): ExpiryOption {
 
 export default function ExpirationPicker({ value, onChange }: ExpirationPickerProps) {
   const [open, setOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const selected = currentOption(value)
 
+  const handleToggle = () => {
+    if (!open) {
+      const r = btnRef.current?.getBoundingClientRect()
+      if (r) setMenuPos({ top: r.bottom + 4, left: r.left })
+    }
+    setOpen(prev => !prev)
+  }
+
+  // Close on outside click or Escape
   useEffect(() => {
     if (!open) return
-    const close = (e: MouseEvent) => {
-      if (menuRef.current?.contains(e.target as Node)) return
-      if (btnRef.current?.contains(e.target as Node)) return
-      setOpen(false)
-    }
+    const close = () => setOpen(false)
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', esc)
+    // Use setTimeout to avoid closing from the same click that opened
+    const timer = setTimeout(() => {
+      document.addEventListener('click', close)
+      document.addEventListener('keydown', esc)
+    }, 0)
     return () => {
-      document.removeEventListener('mousedown', close)
+      clearTimeout(timer)
+      document.removeEventListener('click', close)
       document.removeEventListener('keydown', esc)
     }
   }, [open])
 
-  const rect = btnRef.current?.getBoundingClientRect()
+  const selected = currentOption(value)
 
   return (
     <>
       <button
+        type="button"
         ref={btnRef}
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
           value
             ? 'border-amber-300/50 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-400'
@@ -80,20 +89,22 @@ export default function ExpirationPicker({ value, onChange }: ExpirationPickerPr
         {value ? 'Expires' : 'Expiry'}
       </button>
 
-      {open && rect && createPortal(
+      {open && menuPos && createPortal(
         <div
-          ref={menuRef}
-          style={{ top: rect.bottom + 4, left: rect.left }}
+          style={{ top: menuPos.top, left: menuPos.left }}
           className="fixed z-[9999] w-40 py-1 bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-white/10 rounded-xl shadow-lg animate-[scaleIn_0.1s_ease-out]"
+          onClick={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
         >
           {OPTIONS.map(opt => (
             <button
+              type="button"
               key={opt.value}
               onClick={() => {
                 onChange(computeExpiresAt(opt.value))
                 setOpen(false)
               }}
-              className={`w-full px-3 py-1.5 text-xs text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+              className={`w-full px-3 py-2.5 text-xs text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
                 selected === opt.value ? 'text-[var(--accent)] font-medium' : 'text-gray-700 dark:text-gray-300'
               }`}
             >

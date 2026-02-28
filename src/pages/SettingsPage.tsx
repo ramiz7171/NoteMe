@@ -249,8 +249,8 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto px-6 py-8 flex flex-col gap-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+      <div className="max-w-3xl mx-auto px-3 md:px-6 py-4 md:py-8 flex flex-col gap-4 md:gap-6">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
 
         {/* ── Profile Section ── */}
         <div className={cardClass}>

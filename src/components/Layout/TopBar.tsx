@@ -5,7 +5,12 @@ import { useTheme } from '../../context/ThemeContext'
 import { useSecurity } from '../../context/SecurityContext'
 import Logo from '../Logo'
 
-export default function TopBar() {
+interface TopBarProps {
+  onToggleMobileSidebar?: () => void
+  showMobileMenuBtn?: boolean
+}
+
+export default function TopBar({ onToggleMobileSidebar, showMobileMenuBtn }: TopBarProps) {
   const { profile, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { lockApp } = useSecurity()
@@ -30,12 +35,23 @@ export default function TopBar() {
   const menuPos = btnRef.current?.getBoundingClientRect()
 
   return (
-    <header className="h-14 glass-panel-solid flex items-center justify-between px-6 shrink-0 border-b border-gray-200/50 dark:border-white/5">
-      <div className="flex items-center">
+    <header className="h-12 md:h-14 glass-panel-solid flex items-center justify-between px-3 md:px-6 shrink-0 border-b border-gray-200/50 dark:border-white/5">
+      <div className="flex items-center gap-2">
+        {/* Mobile hamburger */}
+        {showMobileMenuBtn && (
+          <button
+            onClick={onToggleMobileSidebar}
+            className="md:hidden p-2 -ml-1 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+        )}
         <Logo />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 md:gap-3">
         {/* Lock Now button */}
         <button
           onClick={lockApp}
@@ -67,10 +83,13 @@ export default function TopBar() {
         <button
           ref={btnRef}
           onClick={() => setShowMenu(v => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 rounded-xl transition-colors"
+          className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/10 rounded-xl transition-colors"
         >
-          <span>{profile?.username}</span>
-          <svg className={`w-3.5 h-3.5 transition-transform ${showMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <span className="hidden sm:inline">{profile?.username}</span>
+          <span className="sm:hidden w-6 h-6 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] flex items-center justify-center text-xs font-bold">
+            {profile?.username?.charAt(0)?.toUpperCase() ?? '?'}
+          </span>
+          <svg className={`w-3.5 h-3.5 transition-transform hidden sm:block ${showMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>

@@ -502,7 +502,7 @@ export default function GridView({
   const allSelected = hasSelection && gridSelectedIds.size === notes.length
 
   return (
-    <div ref={containerRef} tabIndex={0} className="h-full overflow-y-auto pt-10 px-6 pb-6 outline-none">
+    <div ref={containerRef} tabIndex={0} className="h-full overflow-y-auto pt-4 md:pt-10 px-3 md:px-6 pb-6 outline-none">
       {/* Selection action bar */}
       {hasSelection && (
         <div className="flex items-center gap-3 mb-4 px-1 flex-wrap">
@@ -555,7 +555,7 @@ export default function GridView({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {notes.map((note, idx) => (
             <GridCard
               key={note.id}

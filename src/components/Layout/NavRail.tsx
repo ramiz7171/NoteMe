@@ -68,25 +68,51 @@ const NAV_ITEMS: { id: NavSection; label: string; icon: ReactNode }[] = [
 
 export default function NavRail({ active, onChange }: NavRailProps) {
   return (
-    <nav className="w-[72px] shrink-0 flex flex-col items-center py-3 gap-1 bg-white/60 dark:bg-white/[0.03] border-r border-gray-200/50 dark:border-white/5">
-      {/* All nav items in order: Notes, Transcript, Meetings, Settings */}
-      <div className="flex flex-col items-center gap-1">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onChange(item.id)}
-            className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all ${
-              active === item.id
-                ? 'bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/10'
-            }`}
-            title={item.label}
-          >
-            {item.icon}
-            <span className="text-[10px] font-medium mt-0.5 leading-tight">{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
+    <>
+      {/* Desktop: vertical sidebar rail */}
+      <nav className="hidden md:flex w-[72px] shrink-0 flex-col items-center py-3 gap-1 bg-white/60 dark:bg-white/[0.03] border-r border-gray-200/50 dark:border-white/5">
+        <div className="flex flex-col items-center gap-1">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onChange(item.id)}
+              className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all ${
+                active === item.id
+                  ? 'bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/10'
+              }`}
+              title={item.label}
+            >
+              {item.icon}
+              <span className="text-[10px] font-medium mt-0.5 leading-tight">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Mobile: bottom tab bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel-solid border-t border-gray-200/50 dark:border-white/5 mobile-bottom-nav">
+        <div className="flex items-center justify-around px-1 pt-1.5 pb-1">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onChange(item.id)}
+              className={`flex flex-col items-center justify-center min-w-[48px] py-1 px-1.5 rounded-xl transition-all ${
+                active === item.id
+                  ? 'text-[var(--accent)]'
+                  : 'text-gray-400 dark:text-gray-500'
+              }`}
+            >
+              <div className={`p-1 rounded-lg transition-colors ${
+                active === item.id ? 'bg-[var(--accent)]/10' : ''
+              }`}>
+                {item.icon}
+              </div>
+              <span className="text-[9px] font-medium mt-0.5 leading-tight">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+    </>
   )
 }

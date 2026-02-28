@@ -354,47 +354,49 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header bar */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-200/50 dark:border-white/5 shrink-0">
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-6 py-2 md:py-3 border-b border-gray-200/50 dark:border-white/5 shrink-0 flex-wrap">
         <input
           type="text"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Add title"
-          className="flex-1 text-lg font-semibold bg-transparent text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none"
+          className="flex-1 min-w-0 text-base md:text-lg font-semibold bg-transparent text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none"
         />
 
-        <CustomSelect
-          value={noteType}
-          onChange={(val) => handleTypeChange(val as NoteType)}
-          options={NOTE_TYPES}
-        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <CustomSelect
+            value={noteType}
+            onChange={(val) => handleTypeChange(val as NoteType)}
+            options={NOTE_TYPES}
+          />
 
-        <ExpirationPicker
-          value={note?.expires_at ?? null}
-          onChange={(expiresAt) => {
-            if (!isNew && note) {
-              onUpdate(note.id, { expires_at: expiresAt })
-            }
-          }}
-        />
+          <ExpirationPicker
+            value={note?.expires_at ?? null}
+            onChange={(expiresAt) => {
+              if (!isNew && note) {
+                onUpdate(note.id, { expires_at: expiresAt })
+              }
+            }}
+          />
 
-        {note?.expires_at && <ExpirationBadge expiresAt={note.expires_at} />}
+          {note?.expires_at && <ExpirationBadge expiresAt={note.expires_at} />}
+        </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {saving && (
-            <span className="text-xs text-gray-400">Saving...</span>
+            <span className="text-xs text-gray-400 hidden sm:inline">Saving...</span>
           )}
           {/* Auto-save toggle */}
           <button
               type="button"
               onClick={toggleAutoSave}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
+              className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-1 rounded-lg text-[11px] font-medium transition-colors select-none hover:bg-gray-100 dark:hover:bg-white/5"
               title={autoSave ? 'Auto-save is on' : 'Auto-save is off'}
             >
               <div className={`relative w-7 h-4 rounded-full transition-colors duration-300 ${autoSave ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-300 dark:bg-gray-600'}`}>
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-300 ${autoSave ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
               </div>
-              <span className={`whitespace-nowrap transition-colors duration-300 ${autoSave ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+              <span className={`whitespace-nowrap transition-colors duration-300 hidden sm:inline ${autoSave ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
                 {autoSave ? 'Auto save' : 'Manual'}
               </span>
             </button>
@@ -449,7 +451,7 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
 
       {/* Content area */}
       <div
-        className="flex-1 overflow-y-auto p-6 cursor-text"
+        className="flex-1 overflow-y-auto p-3 md:p-6 cursor-text"
         onClick={() => editor?.commands.focus()}
       >
         <EditorContent editor={editor} />

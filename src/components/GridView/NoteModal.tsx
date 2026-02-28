@@ -56,7 +56,7 @@ export default function NoteModal({ note, onClose, onUpdate, onDelete }: NoteMod
       }`}
     >
       <div
-        className={`w-[95vw] max-w-6xl h-[80vh] glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
+        className={`w-[95vw] max-w-6xl h-[90vh] md:h-[80vh] glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
           closing ? 'opacity-0 scale-95' : 'animate-[scaleIn_0.15s_ease-out]'
         }`}
         onClick={e => e.stopPropagation()}
