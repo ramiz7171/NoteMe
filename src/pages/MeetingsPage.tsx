@@ -120,7 +120,7 @@ export default function MeetingsPage() {
         {/* Meeting list */}
         <div className="flex-1 overflow-y-auto py-1">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex-1 flex items-center justify-center py-12">
               <div className="animate-spin w-6 h-6 border-2 border-black dark:border-white border-t-transparent rounded-full" />
             </div>
           ) : filteredMeetings.length === 0 ? (

@@ -299,7 +299,7 @@ export default function FilesPage() {
 
       <main className="flex-1 flex flex-col overflow-y-auto" onClick={() => setSelectedItems(new Set())}>
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex-1 flex items-center justify-center h-full">
             <div className="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
           </div>
         ) : viewMode === 'grid' ? (

@@ -228,7 +228,7 @@ export default function SettingsPage() {
 
   if (loading || !settings) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex-1 flex items-center justify-center h-full">
         <div className="animate-spin w-8 h-8 border-2 border-black dark:border-white border-t-transparent rounded-full" />
       </div>
     )
