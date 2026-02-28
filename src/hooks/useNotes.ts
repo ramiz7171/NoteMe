@@ -1,14 +1,31 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { isEncrypted } from '../lib/crypto'
 import type { Note, NoteType } from '../types'
 
 const DELETED_RETENTION_DAYS = 30
 
-export function useNotes() {
+interface UseNotesOptions {
+  encrypt?: (content: string) => Promise<string>
+  decrypt?: (content: string) => Promise<string>
+}
+
+export function useNotes(opts?: UseNotesOptions) {
   const { user } = useAuth()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
+
+  const decryptNote = useCallback(async (note: Note): Promise<Note> => {
+    if (!opts?.decrypt || !note.content || !isEncrypted(note.content)) return note
+    const content = await opts.decrypt(note.content)
+    return { ...note, content }
+  }, [opts])
+
+  const decryptNotes = useCallback(async (rawNotes: Note[]): Promise<Note[]> => {
+    if (!opts?.decrypt) return rawNotes
+    return Promise.all(rawNotes.map(decryptNote))
+  }, [opts, decryptNote])
 
   const fetchNotes = useCallback(async () => {
     if (!user) return
@@ -18,10 +35,13 @@ export function useNotes() {
       .select('*')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false })
-    if (!error && data) setNotes(data as Note[])
+    if (!error && data) {
+      const decrypted = await decryptNotes(data as Note[])
+      setNotes(decrypted)
+    }
     setLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id, decryptNotes])
 
   useEffect(() => {
     fetchNotes()
@@ -40,15 +60,17 @@ export function useNotes() {
           table: 'notes',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        async (payload) => {
           if (payload.eventType === 'INSERT') {
+            const decrypted = await decryptNote(payload.new as Note)
             setNotes(prev => {
-              if (prev.some(n => n.id === (payload.new as Note).id)) return prev
-              return [payload.new as Note, ...prev]
+              if (prev.some(n => n.id === decrypted.id)) return prev
+              return [decrypted, ...prev]
             })
           } else if (payload.eventType === 'UPDATE') {
+            const decrypted = await decryptNote(payload.new as Note)
             setNotes(prev =>
-              prev.map(n => (n.id === (payload.new as Note).id ? (payload.new as Note) : n))
+              prev.map(n => (n.id === decrypted.id ? decrypted : n))
             )
           } else if (payload.eventType === 'DELETE') {
             setNotes(prev => prev.filter(n => n.id !== (payload.old as Note).id))
@@ -61,7 +83,7 @@ export function useNotes() {
       supabase.removeChannel(channel)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id, decryptNote])
 
   // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
   useEffect(() => {
@@ -72,30 +94,38 @@ export function useNotes() {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [fetchNotes])
 
-  const createNote = async (title: string, content: string, noteType: NoteType) => {
+  const createNote = async (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => {
     if (!user) return { error: new Error('Not authenticated') }
+    const contentToSave = opts?.encrypt ? await opts.encrypt(content) : content
     const { data, error } = await supabase.from('notes').insert({
       user_id: user.id,
       title,
-      content,
+      content: contentToSave,
       note_type: noteType,
+      ...(expiresAt !== undefined ? { expires_at: expiresAt } : {}),
     }).select().single()
     // Optimistically add the new note to state immediately
     if (!error && data) {
       setNotes(prev => {
         if (prev.some(n => n.id === data.id)) return prev
-        return [data as Note, ...prev]
+        return [{ ...data as Note, content }, ...prev] // local state keeps plaintext
       })
     }
     return { error, data: data as Note | null }
   }
 
-  const updateNote = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number }) => {
+  const updateNote = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number; expires_at?: string | null }) => {
     // Optimistic update for all fields so the UI reflects changes immediately
     setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates, updated_at: new Date().toISOString() } : n))
+
+    const dbUpdates = { ...updates }
+    if (dbUpdates.content && opts?.encrypt) {
+      dbUpdates.content = await opts.encrypt(dbUpdates.content)
+    }
+
     const { error } = await supabase
       .from('notes')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id)
     if (error) fetchNotes()
     return { error }
@@ -211,8 +241,22 @@ export function useNotes() {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - DELETED_RETENTION_DAYS)
 
-  const activeNotes = notes.filter(n => !n.archived && !n.deleted_at)
-  const archivedNotes = notes.filter(n => n.archived && !n.deleted_at)
+  // Filter out expired self-destructing notes
+  const now = Date.now()
+  const isExpired = (n: Note) => n.expires_at && new Date(n.expires_at).getTime() <= now
+
+  // Client-side cleanup: permanently delete expired notes (fire-and-forget)
+  useEffect(() => {
+    const expired = notes.filter(isExpired)
+    if (expired.length === 0) return
+    const ids = expired.map(n => n.id)
+    setNotes(prev => prev.filter(n => !ids.includes(n.id)))
+    supabase.from('notes').delete().in('id', ids).then(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes.length])
+
+  const activeNotes = notes.filter(n => !n.archived && !n.deleted_at && !isExpired(n))
+  const archivedNotes = notes.filter(n => n.archived && !n.deleted_at && !isExpired(n))
   const deletedNotes = notes.filter(n => n.deleted_at && new Date(n.deleted_at) > cutoff)
 
   const sortNotes = (list: Note[]) => {

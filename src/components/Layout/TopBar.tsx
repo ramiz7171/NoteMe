@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useSecurity } from '../../context/SecurityContext'
 import Logo from '../Logo'
 
 export default function TopBar() {
   const { profile, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { lockApp } = useSecurity()
   const [showMenu, setShowMenu] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -34,6 +36,17 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Lock Now button */}
+        <button
+          onClick={lockApp}
+          className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors"
+          title="Lock app"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </button>
+
         <button
           onClick={toggleTheme}
           className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors"

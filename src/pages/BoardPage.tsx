@@ -9,8 +9,8 @@ type Tool = 'pen' | 'marker' | 'highlighter' | 'eraser'
 interface BoardPageProps {
   boardNotes: Note[]
   loading: boolean
-  createNote: (title: string, content: string, noteType: NoteType) => Promise<{ error: unknown; data?: Note | null } | undefined>
-  updateNote: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number }) => Promise<{ error: unknown }>
+  createNote: (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => Promise<{ error: unknown; data?: Note | null } | undefined>
+  updateNote: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number; expires_at?: string | null }) => Promise<{ error: unknown }>
   deleteNote: (id: string) => Promise<{ error: unknown } | undefined>
 }
 

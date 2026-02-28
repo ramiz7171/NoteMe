@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import Logo from '../Logo'
+import FingerprintLogo from './FingerprintLogo'
+import MfaVerifyModal from '../Security/MfaVerifyModal'
 
 type AuthMode = 'login' | 'signup' | 'magic-link'
 
 export default function LoginForm() {
-  const { signIn, signUp, signInWithMagicLink } = useAuth()
+  const { user, signIn, signUp, signInWithMagicLink, mfaRequired, mfaFactorId, clearMfa } = useAuth()
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,11 +31,20 @@ export default function LoginForm() {
       if (error) setError(error.message)
       else setMessage('Check your email to confirm your account!')
     } else {
-      const { error } = await signIn(email, password)
-      if (error) setError(error.message)
+      const result = await signIn(email, password)
+      if (result.error) setError(result.error.message)
+      // If MFA required, the modal will appear via mfaRequired state
     }
 
     setLoading(false)
+  }
+
+  const handleMfaVerified = () => {
+    // MFA verified, auth state change will redirect to dashboard
+  }
+
+  const handleMfaCancel = () => {
+    clearMfa()
   }
 
   return (
@@ -41,6 +52,7 @@ export default function LoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Logo className="mx-auto" />
+          <FingerprintLogo />
           <p className="mt-3 text-gray-500 dark:text-gray-400 text-lg">
             You script, we encrypt.
           </p>
@@ -140,6 +152,15 @@ export default function LoginForm() {
           </form>
         </div>
       </div>
+
+      {mfaRequired && mfaFactorId && (
+        <MfaVerifyModal
+          factorId={mfaFactorId}
+          userId={user?.id}
+          onVerified={handleMfaVerified}
+          onCancel={handleMfaCancel}
+        />
+      )}
     </div>
   )
 }

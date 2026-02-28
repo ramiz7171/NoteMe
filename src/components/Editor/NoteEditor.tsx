@@ -27,6 +27,8 @@ import { FontSize } from './extensions/FontSize'
 import { AudioNode } from './extensions/AudioNode'
 import EditorToolbar from './EditorToolbar'
 import CustomSelect from '../shared/CustomSelect'
+import ExpirationPicker from '../Notes/ExpirationPicker'
+import ExpirationBadge from '../Notes/ExpirationBadge'
 import type { Note, NoteType } from '../../types'
 
 const lowlight = createLowlight(common)
@@ -47,8 +49,8 @@ const NOTE_TYPES: { value: NoteType; label: string }[] = [
 interface Props {
   note: Note | null
   isNew: boolean
-  onSave: (title: string, content: string, noteType: NoteType) => Promise<void>
-  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType }) => Promise<{ error: unknown } | undefined>
+  onSave: (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => Promise<void>
+  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => Promise<{ error: unknown } | undefined>
   onDelete: (id: string) => Promise<{ error: unknown } | undefined>
   noTitleIndex: number
   tabTitle?: string
@@ -366,6 +368,17 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           onChange={(val) => handleTypeChange(val as NoteType)}
           options={NOTE_TYPES}
         />
+
+        <ExpirationPicker
+          value={note?.expires_at ?? null}
+          onChange={(expiresAt) => {
+            if (!isNew && note) {
+              onUpdate(note.id, { expires_at: expiresAt })
+            }
+          }}
+        />
+
+        {note?.expires_at && <ExpirationBadge expiresAt={note.expires_at} />}
 
         <div className="flex items-center gap-2 shrink-0">
           {saving && (

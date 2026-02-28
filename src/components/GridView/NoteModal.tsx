@@ -6,7 +6,7 @@ import type { Note, NoteType } from '../../types'
 interface NoteModalProps {
   note: Note
   onClose: () => void
-  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType }) => Promise<{ error: unknown } | undefined>
+  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => Promise<{ error: unknown } | undefined>
   onDelete: (id: string) => Promise<{ error: unknown } | undefined>
 }
 

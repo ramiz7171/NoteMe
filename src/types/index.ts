@@ -29,6 +29,7 @@ export interface Note {
   folder_id: string | null
   color: string
   position: number
+  expires_at: string | null
   created_at: string
   updated_at: string
 }
@@ -123,9 +124,32 @@ export interface UserFile {
   storage_path: string
   share_id: string | null
   share_expires_at: string | null
+  share_password_hash: string | null
   position: number
   created_at: string
   updated_at: string
+}
+
+export interface AuditLog {
+  id: string
+  user_id: string
+  action: string
+  resource_type: string | null
+  resource_id: string | null
+  details: Record<string, unknown>
+  device_info: string
+  created_at: string
+}
+
+export interface SessionRecord {
+  id: string
+  user_id: string
+  session_token: string
+  device_info: string
+  ip_address: string
+  last_active_at: string
+  created_at: string
+  is_current: boolean
 }
 
 export type Json =
@@ -229,6 +253,7 @@ export type Database = {
           content: string
           created_at: string
           deleted_at: string | null
+          expires_at: string | null
           folder_id: string | null
           id: string
           note_type: Database["public"]["Enums"]["note_type"]
@@ -244,6 +269,7 @@ export type Database = {
           content?: string
           created_at?: string
           deleted_at?: string | null
+          expires_at?: string | null
           folder_id?: string | null
           id?: string
           note_type?: Database["public"]["Enums"]["note_type"]
@@ -259,6 +285,7 @@ export type Database = {
           content?: string
           created_at?: string
           deleted_at?: string | null
+          expires_at?: string | null
           folder_id?: string | null
           id?: string
           note_type?: Database["public"]["Enums"]["note_type"]
@@ -323,6 +350,7 @@ export type Database = {
           storage_path: string
           share_id: string | null
           share_expires_at: string | null
+          share_password_hash: string | null
           position: number
           created_at: string
           updated_at: string
@@ -337,6 +365,7 @@ export type Database = {
           storage_path: string
           share_id?: string | null
           share_expires_at?: string | null
+          share_password_hash?: string | null
           position?: number
           created_at?: string
           updated_at?: string
@@ -351,6 +380,7 @@ export type Database = {
           storage_path?: string
           share_id?: string | null
           share_expires_at?: string | null
+          share_password_hash?: string | null
           position?: number
           created_at?: string
           updated_at?: string
@@ -537,12 +567,194 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          resource_type: string | null
+          resource_id: string | null
+          details: Json
+          device_info: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          resource_type?: string | null
+          resource_id?: string | null
+          details?: Json
+          device_info?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          resource_type?: string | null
+          resource_id?: string | null
+          details?: Json
+          device_info?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passkeys: {
+        Row: {
+          id: string
+          user_id: string
+          credential_id: string
+          public_key: string
+          counter: number
+          device_name: string
+          transports: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          credential_id: string
+          public_key: string
+          counter?: number
+          device_name?: string
+          transports?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          credential_id?: string
+          public_key?: string
+          counter?: number
+          device_name?: string
+          transports?: string[]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passkeys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recovery_codes: {
+        Row: {
+          id: string
+          user_id: string
+          code_hash: string
+          used: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          code_hash: string
+          used?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          code_hash?: string
+          used?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recovery_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          id: string
+          user_id: string
+          session_token: string
+          device_info: string
+          ip_address: string
+          last_active_at: string
+          created_at: string
+          is_current: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_token: string
+          device_info?: string
+          ip_address?: string
+          last_active_at?: string
+          created_at?: string
+          is_current?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_token?: string
+          device_info?: string
+          ip_address?: string
+          last_active_at?: string
+          created_at?: string
+          is_current?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      set_share_password: {
+        Args: { p_file_id: string; p_password: string }
+        Returns: undefined
+      }
+      verify_share_password: {
+        Args: { p_share_id: string; p_password: string }
+        Returns: boolean
+      }
+      get_shared_file: {
+        Args: { p_share_id: string }
+        Returns: Json
+      }
+      generate_recovery_codes: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
+      verify_recovery_code: {
+        Args: { p_user_id: string; p_code: string }
+        Returns: boolean
+      }
+      count_recovery_codes: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      cleanup_expired_notes: {
+        Args: Record<string, never>
+        Returns: number
+      }
     }
     Enums: {
       note_type: "basic" | "checkbox" | "java" | "javascript" | "python" | "sql" | "board"

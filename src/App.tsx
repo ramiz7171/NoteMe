@@ -1,12 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { EncryptionProvider } from './context/EncryptionContext'
+import { SecurityProvider, useSecurity } from './context/SecurityContext'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import SharedFilePage from './pages/SharedFilePage'
+import LockScreen from './components/Security/LockScreen'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
+  const { isLocked } = useSecurity()
 
   if (loading) {
     return (
@@ -16,7 +20,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return user ? <>{children}</> : <Navigate to="/auth" replace />
+  if (!user) return <Navigate to="/auth" replace />
+  if (isLocked) return <LockScreen />
+
+  return <>{children}</>
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -38,12 +45,16 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/share/:shareId" element={<SharedFilePage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <SecurityProvider>
+            <EncryptionProvider>
+              <Routes>
+                <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
+                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/share/:shareId" element={<SharedFilePage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </EncryptionProvider>
+          </SecurityProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

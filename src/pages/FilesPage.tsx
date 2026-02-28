@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useFiles } from '../hooks/useFiles'
+import { useEncryption } from '../context/EncryptionContext'
 import FileShareHeader from '../components/FileShare/FileShareHeader'
 import FileGridView from '../components/FileShare/FileGridView'
 import FileListView from '../components/FileShare/FileListView'
@@ -12,13 +13,17 @@ import DropZoneOverlay from '../components/FileShare/DropZoneOverlay'
 import type { FileFolderColor } from '../types'
 
 export default function FilesPage() {
+  const { encryptFileBlob, decryptFileBlob, fileEncryptionEnabled, isUnlocked } = useEncryption()
+  const fileEncryptOpts = fileEncryptionEnabled && isUnlocked
+    ? { encryptFile: encryptFileBlob, decryptFile: decryptFileBlob, encryptionEnabled: true }
+    : undefined
   const {
     fileFolders, userFiles, loading, uploadProgress, isUploading,
     createFileFolder, renameFileFolder, updateFileFolderColor, moveFileFolder, deleteFileFolder,
     uploadFiles, renameFile, moveFile, bulkMoveFiles, deleteFile, bulkDeleteFiles,
     getFileUrl, downloadFile, generateShareLink, revokeShareLink,
     getFolderContents, getBreadcrumbs,
-  } = useFiles()
+  } = useFiles(fileEncryptOpts)
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')

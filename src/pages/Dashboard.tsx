@@ -13,13 +13,18 @@ import BoardPage from './BoardPage'
 import FilesPage from './FilesPage'
 import { useNotes } from '../hooks/useNotes'
 import { useFolders } from '../hooks/useFolders'
+import { useEncryption } from '../context/EncryptionContext'
 import deleteSoundFile from '../assets/note delete.wav'
 import type { Note, NoteType } from '../types'
 
 export default function Dashboard() {
   const deleteSoundRef = useRef<HTMLAudioElement | null>(null)
   const editorMainRef = useRef<HTMLElement>(null)
-  const { notes, basicNotes, boardNotes, codeNotes, archivedNotes, deletedNotes, folderNotes, loading, createNote, updateNote, updateNoteColor, updatePositions, deleteNote, permanentDeleteNote, permanentDeleteAll, restoreNote, archiveNote, unarchiveNote, pinNote, moveToFolder, bulkMoveToFolder, bulkDelete, bulkArchive } = useNotes()
+  const { encryptString, decryptString, isEncryptionEnabled, isUnlocked } = useEncryption()
+  const encryptOpts = isEncryptionEnabled && isUnlocked
+    ? { encrypt: encryptString, decrypt: decryptString }
+    : undefined
+  const { notes, basicNotes, boardNotes, codeNotes, archivedNotes, deletedNotes, folderNotes, loading, createNote, updateNote, updateNoteColor, updatePositions, deleteNote, permanentDeleteNote, permanentDeleteAll, restoreNote, archiveNote, unarchiveNote, pinNote, moveToFolder, bulkMoveToFolder, bulkDelete, bulkArchive } = useNotes(encryptOpts)
   const { folders, createFolder, renameFolder, deleteFolder } = useFolders()
   const [tabs, setTabs] = useState<Tab[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
@@ -145,8 +150,8 @@ export default function Dashboard() {
     })
   }, [updateNoteColor])
 
-  const handleSaveNew = useCallback(async (title: string, content: string, noteType: NoteType) => {
-    const result = await createNote(title, content, noteType)
+  const handleSaveNew = useCallback(async (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => {
+    const result = await createNote(title, content, noteType, expiresAt)
     if (result?.error || !result?.data) return
 
     // Directly link the tab to the new note using the returned ID
@@ -338,7 +343,7 @@ export default function Dashboard() {
     }
   }
 
-  const handleUpdate = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType }) => {
+  const handleUpdate = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => {
     const result = await updateNote(id, updates)
     if (!result?.error && updates.title) {
       setTabs(prev => prev.map(t =>

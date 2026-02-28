@@ -5,7 +5,13 @@ import type { FileFolder, UserFile, FileFolderColor } from '../types'
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB
 
-export function useFiles() {
+interface UseFilesOptions {
+  encryptFile?: (file: File) => Promise<Blob>
+  decryptFile?: (blob: Blob, mimeType: string) => Promise<Blob>
+  encryptionEnabled?: boolean
+}
+
+export function useFiles(opts?: UseFilesOptions) {
   const { user, profile } = useAuth()
   const [fileFolders, setFileFolders] = useState<FileFolder[]>([])
   const [userFiles, setUserFiles] = useState<UserFile[]>([])
@@ -181,9 +187,15 @@ export function useFiles() {
 
       setUploadProgress(prev => ({ ...prev, [uploadId]: 30 }))
 
+      // Encrypt file if encryption is enabled
+      let uploadData: File | Blob = file
+      if (opts?.encryptionEnabled && opts?.encryptFile) {
+        uploadData = await opts.encryptFile(file)
+      }
+
       const { error: uploadError } = await supabase.storage
         .from('user-files')
-        .upload(storagePath, file, { cacheControl: '3600', upsert: false })
+        .upload(storagePath, uploadData, { cacheControl: '3600', upsert: false })
 
       if (uploadError) {
         errors.push(`${file.name}: ${uploadError.message}`)
@@ -226,7 +238,7 @@ export function useFiles() {
     }
 
     return { errors }
-  }, [user, profile])
+  }, [user, profile, opts])
 
   const renameFile = useCallback(async (id: string, fileName: string) => {
     setUserFiles(prev => prev.map(f => f.id === id ? { ...f, file_name: fileName, updated_at: new Date().toISOString() } : f))
@@ -274,18 +286,34 @@ export function useFiles() {
   }, [])
 
   const downloadFile = useCallback(async (file: UserFile) => {
-    const url = getFileUrl(file.storage_path)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = file.file_name
-    a.target = '_blank'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }, [getFileUrl])
+    if (opts?.encryptionEnabled && opts?.decryptFile) {
+      // Download, decrypt, then offer as download
+      const url = getFileUrl(file.storage_path)
+      const response = await fetch(url)
+      const encryptedBlob = await response.blob()
+      const decryptedBlob = await opts.decryptFile(encryptedBlob, file.file_type)
+      const blobUrl = URL.createObjectURL(decryptedBlob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = file.file_name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } else {
+      const url = getFileUrl(file.storage_path)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.file_name
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+  }, [getFileUrl, opts])
 
   // Share link operations
-  const generateShareLink = useCallback(async (fileId: string, expiresIn: '24h' | '7d' | '30d' | 'never') => {
+  const generateShareLink = useCallback(async (fileId: string, expiresIn: '24h' | '7d' | '30d' | 'never', password?: string) => {
     const shareId = crypto.randomUUID().replace(/-/g, '').slice(0, 16)
     let shareExpiresAt: string | null = null
 
@@ -302,6 +330,11 @@ export function useFiles() {
       return null
     }
 
+    // Set password if provided
+    if (password) {
+      await supabase.rpc('set_share_password', { p_file_id: fileId, p_password: password })
+    }
+
     return `${window.location.origin}/share/${shareId}`
   }, [fetchUserFiles])
 
@@ -309,6 +342,8 @@ export function useFiles() {
     setUserFiles(prev => prev.map(f => f.id === fileId ? { ...f, share_id: null, share_expires_at: null } : f))
     const { error } = await supabase.from('user_files').update({ share_id: null, share_expires_at: null }).eq('id', fileId)
     if (error) fetchUserFiles()
+    // Also clear password
+    await supabase.rpc('set_share_password', { p_file_id: fileId, p_password: '' })
   }, [fetchUserFiles])
 
   // Computed helpers

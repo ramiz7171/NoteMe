@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { Note, Folder } from '../../types'
 import { TAB_COLORS } from '../Layout/TabBar'
+import ExpirationBadge from '../Notes/ExpirationBadge'
 
 interface GridViewProps {
   notes: Note[]
@@ -380,11 +381,14 @@ function GridCard({
           {plainContent ? highlightText(plainContent, searchQuery) : 'Empty note'}
         </p>
 
-        {/* Footer: type badge + date */}
+        {/* Footer: type badge + expiration + date */}
         <div className="flex items-center justify-between">
-          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>
-            {typeInfo.label}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>
+              {typeInfo.label}
+            </span>
+            {note.expires_at && <ExpirationBadge expiresAt={note.expires_at} />}
+          </div>
           <span className="text-[10px] text-gray-400 dark:text-gray-500">
             {new Date(note.updated_at).toLocaleDateString()}
           </span>
