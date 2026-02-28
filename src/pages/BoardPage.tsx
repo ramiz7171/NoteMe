@@ -338,17 +338,17 @@ const BoardCanvas = memo(function BoardCanvas({ board, onSave }: { board: Note; 
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Toolbar */}
-      <div className="shrink-0 px-4 py-2 border-b border-gray-200/50 dark:border-white/5 bg-white/60 dark:bg-white/[0.03]">
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* Toolbar — horizontally scrollable on mobile */}
+      <div className="shrink-0 px-2 md:px-4 py-1.5 md:py-2 border-b border-gray-200/50 dark:border-white/5 bg-white/60 dark:bg-white/[0.03] overflow-x-auto">
+        <div className="flex items-center gap-1.5 md:gap-2 min-w-max md:flex-wrap md:min-w-0">
           {/* Tools */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 md:gap-1">
             {(['pen', 'marker', 'highlighter', 'eraser'] as Tool[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTool(t)}
                 title={TOOL_TITLES[t]}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                   tool === t
                     ? 'bg-black dark:bg-white text-white dark:text-black'
                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -362,12 +362,12 @@ const BoardCanvas = memo(function BoardCanvas({ board, onSave }: { board: Note; 
           {divider}
 
           {/* Colors */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 md:gap-1">
             {COLORS.map(c => (
               <button
                 key={c}
                 onClick={() => setColor(c)}
-                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                className={`w-4 h-4 md:w-5 md:h-5 rounded-full border-2 transition-transform hover:scale-110 ${
                   color === c ? 'border-black dark:border-white scale-110' : 'border-gray-300 dark:border-white/20'
                 }`}
                 style={{ backgroundColor: c }}
@@ -379,12 +379,12 @@ const BoardCanvas = memo(function BoardCanvas({ board, onSave }: { board: Note; 
           {divider}
 
           {/* Brush sizes */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 md:gap-1">
             {SIZES.map(s => (
               <button
                 key={s.value}
                 onClick={() => setBrushSize(s.value)}
-                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                className={`w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center transition-colors ${
                   brushSize === s.value
                     ? 'bg-black dark:bg-white text-white dark:text-black'
                     : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -402,7 +402,7 @@ const BoardCanvas = memo(function BoardCanvas({ board, onSave }: { board: Note; 
           {divider}
 
           {/* Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 md:gap-1">
             <button
               onClick={handleUndo}
               disabled={strokes.length === 0}
@@ -435,7 +435,7 @@ const BoardCanvas = memo(function BoardCanvas({ board, onSave }: { board: Note; 
           <button
             onClick={handleExport}
             disabled={strokes.length === 0}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 ${strokes.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className={`px-2 md:px-3 py-1.5 text-xs font-medium rounded-lg transition-colors bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 ${strokes.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
           >
             <svg className="w-4 h-4 inline -mt-0.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -741,9 +741,9 @@ export default function BoardPage({ boardNotes, loading, createNote, updateNote,
   }, [])
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden">
-      {/* Left sidebar */}
-      <div className="w-[280px] shrink-0 border-r border-gray-200/50 dark:border-white/5 flex flex-col bg-white/60 dark:bg-white/[0.03]">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+      {/* Left sidebar — hidden on mobile when board is active */}
+      <div className={`${currentBoard ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-gray-200/50 dark:border-white/5 flex-col bg-white/60 dark:bg-white/[0.03]`}>
         <div className="p-3 space-y-2 shrink-0">
           <button
             onClick={handleNewBoard}
@@ -796,9 +796,20 @@ export default function BoardPage({ boardNotes, loading, createNote, updateNote,
         </div>
       </div>
 
-      {/* Main area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main area — hidden on mobile when no board active */}
+      <div className={`${!currentBoard ? 'hidden md:flex' : 'flex'} flex-1 flex-col overflow-hidden`}>
+        {currentBoard && (
+          <div className="md:hidden flex items-center gap-2 px-3 py-2 border-b border-gray-200/50 dark:border-white/5 shrink-0 bg-white/60 dark:bg-white/[0.03]">
+            <button onClick={() => { if (activeTabId) closeTab(activeTabId) }} className="p-1.5 rounded-lg hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{currentBoard.title}</span>
+          </div>
+        )}
         {tabs.length > 0 && (
+          <div className="hidden md:block">
           <TabBar
             tabs={tabs}
             activeTabId={activeTabId}
@@ -813,6 +824,7 @@ export default function BoardPage({ boardNotes, loading, createNote, updateNote,
             onUpdateGroupColor={handleUpdateGroupColor}
             onRenameGroup={handleRenameGroup}
           />
+          </div>
         )}
 
         {currentBoard ? (

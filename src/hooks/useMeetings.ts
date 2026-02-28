@@ -8,9 +8,9 @@ export function useMeetings() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchMeetings = useCallback(async () => {
+  const fetchMeetings = useCallback(async (silent = false) => {
     if (!user) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const { data, error } = await supabase
       .from('meetings')
       .select('*')
@@ -50,7 +50,7 @@ export function useMeetings() {
   // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchMeetings()
+      if (document.visibilityState === 'visible') fetchMeetings(true)
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)

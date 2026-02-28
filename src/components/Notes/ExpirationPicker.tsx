@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
-type ExpiryOption = 'never' | '1h' | '24h' | '7d' | '30d'
+type ExpiryOption = 'never' | '30m' | '1h' | '24h' | '7d' | '30d'
 
 interface ExpirationPickerProps {
   value: string | null
@@ -10,6 +10,7 @@ interface ExpirationPickerProps {
 
 const OPTIONS: { value: ExpiryOption; label: string }[] = [
   { value: 'never', label: 'Never' },
+  { value: '30m', label: '30 minutes' },
   { value: '1h', label: '1 hour' },
   { value: '24h', label: '24 hours' },
   { value: '7d', label: '7 days' },
@@ -20,6 +21,7 @@ function computeExpiresAt(option: ExpiryOption): string | null {
   if (option === 'never') return null
   const now = Date.now()
   const ms: Record<string, number> = {
+    '30m': 30 * 60 * 1000,
     '1h': 60 * 60 * 1000,
     '24h': 24 * 60 * 60 * 1000,
     '7d': 7 * 24 * 60 * 60 * 1000,
@@ -32,6 +34,7 @@ function currentOption(value: string | null): ExpiryOption {
   if (!value) return 'never'
   const diff = new Date(value).getTime() - Date.now()
   if (diff <= 0) return 'never'
+  if (diff <= 45 * 60 * 1000) return '30m'
   if (diff <= 2 * 60 * 60 * 1000) return '1h'
   if (diff <= 36 * 60 * 60 * 1000) return '24h'
   if (diff <= 10 * 24 * 60 * 60 * 1000) return '7d'

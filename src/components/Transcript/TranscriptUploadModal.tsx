@@ -65,7 +65,7 @@ export default function TranscriptUploadModal({ onClose, onCreate }: TranscriptU
       onClick={onClose}
     >
       <div
-        className="w-[440px] glass-panel-solid rounded-2xl shadow-2xl p-5 space-y-4 animate-[scaleIn_0.15s_ease-out]"
+        className="w-[92vw] max-w-[440px] glass-panel-solid rounded-2xl shadow-2xl p-5 space-y-4 animate-[scaleIn_0.15s_ease-out]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

@@ -43,7 +43,7 @@ export default function LinkModal({ editor, onClose }: LinkModalProps) {
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30" onClick={onClose}>
       <div
-        className="w-96 glass-panel-solid rounded-xl shadow-2xl p-4 space-y-3"
+        className="w-[92vw] max-w-96 glass-panel-solid rounded-xl shadow-2xl p-4 space-y-3"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">

@@ -53,7 +53,7 @@ export default function ShareLinkModal({ file, onClose, onGenerate, onRevoke }: 
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="w-96 glass-panel-solid rounded-xl shadow-2xl p-5 animate-[scaleIn_0.15s_ease-out]"
+        className="w-[92vw] max-w-96 glass-panel-solid rounded-xl shadow-2xl p-5 animate-[scaleIn_0.15s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

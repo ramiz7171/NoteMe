@@ -60,7 +60,7 @@ export default function PinSetupModal({ onClose, mode }: PinSetupModalProps) {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-80 glass-panel-solid rounded-xl shadow-2xl p-5 animate-[scaleIn_0.15s_ease-out]">
+      <div className="w-[92vw] max-w-80 glass-panel-solid rounded-xl shadow-2xl p-5 animate-[scaleIn_0.15s_ease-out]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
             {mode === 'setup' ? 'Set Up PIN' : 'Change PIN'}

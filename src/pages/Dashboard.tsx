@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import TopBar from '../components/Layout/TopBar'
+import Logo from '../components/Logo'
 import NavRail, { type NavSection } from '../components/Layout/NavRail'
 import TabBar, { type Tab } from '../components/Layout/TabBar'
 import Sidebar from '../components/Sidebar/Sidebar'
@@ -16,6 +17,107 @@ import { useFolders } from '../hooks/useFolders'
 import { useEncryption } from '../context/EncryptionContext'
 import deleteSoundFile from '../assets/note delete.wav'
 import type { Note, NoteType } from '../types'
+
+/* ─── New Note Modal (resizable) ────────────────────────────────── */
+function NewNoteModal({ onClose, onSave, onUpdate, onDelete, noTitleCounter }: {
+  onClose: () => void
+  onSave: (title: string, content: string, noteType: NoteType) => Promise<void>
+  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => Promise<{ error: unknown } | undefined>
+  onDelete: (id: string) => Promise<{ error: unknown } | undefined>
+  noTitleCounter: number
+}) {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  const resizing = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null)
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!resizing.current) return
+      e.preventDefault()
+      const dx = e.clientX - resizing.current.startX
+      const dy = e.clientY - resizing.current.startY
+      const newW = Math.max(400, Math.min(resizing.current.startW + dx * 2, window.innerWidth * 0.95))
+      const newH = Math.max(300, Math.min(resizing.current.startH + dy * 2, window.innerHeight * 0.95))
+      setSize({ w: newW, h: newH })
+    }
+    const onMouseUp = () => {
+      if (resizing.current) {
+        resizing.current = null
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const panel = (e.currentTarget as HTMLElement).parentElement!
+    const rect = panel.getBoundingClientRect()
+    resizing.current = { startX: e.clientX, startY: e.clientY, startW: rect.width, startH: rect.height }
+    document.body.style.cursor = 'nwse-resize'
+    document.body.style.userSelect = 'none'
+  }
+
+  const panelStyle: React.CSSProperties = size ? { width: size.w, height: size.h } : {}
+
+  return (
+    <div
+      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+      onMouseDown={(e) => { (e.currentTarget as any).__mouseDownTarget = e.target }}
+      onClick={(e) => { if (e.target === e.currentTarget && (e.currentTarget as any).__mouseDownTarget === e.currentTarget) onClose() }}
+    >
+      <div
+        style={panelStyle}
+        className={`${size ? '' : 'w-[92vw] max-w-5xl h-[80vh]'} glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-[scaleIn_0.15s_ease-out] relative`}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-gray-200/50 dark:border-white/5">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">New Note</span>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <NoteEditor
+            key="new-note-modal"
+            note={null}
+            isNew={true}
+            onSave={onSave}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+            noTitleIndex={noTitleCounter}
+          />
+        </div>
+        {/* Resize handle */}
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-10 hidden md:block group"
+          title="Drag to resize"
+        >
+          <svg
+            className="w-full h-full text-gray-300 dark:text-gray-600 group-hover:text-gray-400 dark:group-hover:text-gray-500 transition-colors"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M17 17L7 17L17 7z" opacity="0.3" />
+            <path d="M14 17h1v-3h-1zm3-6v1h-3v-1zm-3 3h1v-3h-1zm3-6v1h-3v-1z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const deleteSoundRef = useRef<HTMLAudioElement | null>(null)
@@ -448,7 +550,12 @@ export default function Dashboard() {
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 onClick={() => setMobileSidebarOpen(false)}
               />
-              <div className="absolute inset-y-0 left-0 w-[85vw] max-w-[320px] animate-[slideDrawerIn_0.25s_ease-out]">
+              <div className="absolute inset-y-0 left-0 w-[65vw] max-w-[260px] animate-[slideDrawerIn_0.25s_ease-out] bg-white dark:bg-[#1a1a1a] flex flex-col">
+                {/* Logo at top of drawer */}
+                <div className="flex items-center justify-center py-3 shrink-0 border-b border-gray-200/50 dark:border-white/5">
+                  <Logo className="h-10" />
+                </div>
+                <div className="flex-1 min-h-0 overflow-hidden">
                 <Sidebar
                   basicNotes={basicNotes}
                   boardNotes={boardNotes}
@@ -481,6 +588,7 @@ export default function Dashboard() {
                   onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
                   isHidden={false}
                 />
+                </div>
               </div>
             </div>
           )}
@@ -637,42 +745,16 @@ export default function Dashboard() {
 
       {/* New note modal for grid view */}
       {showNewNoteModal && (
-        <div
-          className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
-          onMouseDown={(e) => { (e.currentTarget as any).__mouseDownTarget = e.target }}
-          onClick={(e) => { if (e.target === e.currentTarget && (e.currentTarget as any).__mouseDownTarget === e.currentTarget) setShowNewNoteModal(false) }}
-        >
-          <div
-            className="w-[95vw] max-w-6xl h-[90vh] md:h-[80vh] glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-[scaleIn_0.15s_ease-out]"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-gray-200/50 dark:border-white/5">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">New Note</span>
-              <button
-                onClick={() => setShowNewNoteModal(false)}
-                className="p-1.5 rounded-lg hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors shrink-0"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <NoteEditor
-                key="new-note-modal"
-                note={null}
-                isNew={true}
-                onSave={async (title, content, noteType) => {
-                  await handleSaveNew(title, content, noteType)
-                  setShowNewNoteModal(false)
-                }}
-                onUpdate={handleUpdate}
-                onDelete={handleDeleteNote}
-                noTitleIndex={noTitleCounter}
-              />
-            </div>
-          </div>
-        </div>
+        <NewNoteModal
+          onClose={() => setShowNewNoteModal(false)}
+          onSave={async (title, content, noteType) => {
+            await handleSaveNew(title, content, noteType)
+            setShowNewNoteModal(false)
+          }}
+          onUpdate={handleUpdate}
+          onDelete={handleDeleteNote}
+          noTitleCounter={noTitleCounter}
+        />
       )}
     </div>
   )

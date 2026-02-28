@@ -75,7 +75,7 @@ export default function VoiceRecorderModal({ editor, onClose }: VoiceRecorderMod
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30" onClick={handleClose}>
       <div
-        className="w-96 glass-panel-solid rounded-xl shadow-2xl p-4 space-y-4"
+        className="w-[92vw] max-w-96 glass-panel-solid rounded-xl shadow-2xl p-4 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Voice Recording</h3>

@@ -106,9 +106,11 @@ export function useFiles(opts?: UseFilesOptions) {
   }, [user?.id])
 
   // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
+  // Silent refetch — no loading spinner, data updates seamlessly in background
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
+        // Don't set loading=true — just silently refresh data in the background
         fetchFileFolders()
         fetchUserFiles()
       }

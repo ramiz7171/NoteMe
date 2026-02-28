@@ -8,9 +8,9 @@ export function useFolders() {
   const [folders, setFolders] = useState<Folder[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchFolders = useCallback(async () => {
+  const fetchFolders = useCallback(async (silent = false) => {
     if (!user) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const { data, error } = await supabase
       .from('folders')
       .select('*')
@@ -65,7 +65,7 @@ export function useFolders() {
   // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchFolders()
+      if (document.visibilityState === 'visible') fetchFolders(true)
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)

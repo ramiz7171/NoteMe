@@ -49,7 +49,7 @@ export default function NewFolderModal({
     >
       <form
         onSubmit={handleSubmit}
-        className="w-80 glass-panel-solid rounded-xl shadow-2xl p-5 animate-[scaleIn_0.15s_ease-out]"
+        className="w-[92vw] max-w-80 glass-panel-solid rounded-xl shadow-2xl p-5 animate-[scaleIn_0.15s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">

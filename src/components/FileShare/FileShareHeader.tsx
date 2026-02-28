@@ -52,7 +52,7 @@ export default function FileShareHeader({
   return (
     <div className="shrink-0 border-b border-gray-200/50 dark:border-white/5 bg-white/60 dark:bg-white/[0.03]">
       {/* Top row: title + view toggle */}
-      <div className="flex items-center justify-between px-5 pt-3 pb-2">
+      <div className="flex items-center justify-between px-3 md:px-5 pt-3 pb-2">
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white">File Share</h1>
         <div className="flex items-center gap-2">
           {/* Grid / List toggle */}
@@ -80,7 +80,7 @@ export default function FileShareHeader({
       </div>
 
       {/* Navigation bar */}
-      <div className="flex items-center gap-1.5 px-5 pb-2">
+      <div className="flex items-center gap-1.5 px-3 md:px-5 pb-2">
         {/* Back */}
         <button
           onClick={onGoBack}
@@ -161,7 +161,7 @@ export default function FileShareHeader({
         <div className="flex-1" />
 
         {/* Search */}
-        <div className="relative w-52">
+        <div className="relative w-32 md:w-52">
           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -176,7 +176,7 @@ export default function FileShareHeader({
       </div>
 
       {/* Actions row */}
-      <div className="flex items-center gap-3 px-5 pb-3">
+      <div className="flex items-center gap-3 px-3 md:px-5 pb-3">
         <button
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white hover:brightness-90 transition-all"

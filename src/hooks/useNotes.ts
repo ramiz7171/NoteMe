@@ -27,9 +27,9 @@ export function useNotes(opts?: UseNotesOptions) {
     return Promise.all(rawNotes.map(decryptNote))
   }, [opts, decryptNote])
 
-  const fetchNotes = useCallback(async () => {
+  const fetchNotes = useCallback(async (silent = false) => {
     if (!user) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const { data, error } = await supabase
       .from('notes')
       .select('*')
@@ -88,7 +88,7 @@ export function useNotes(opts?: UseNotesOptions) {
   // Refetch when tab becomes visible again (handles missed realtime events during sleep/background)
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchNotes()
+      if (document.visibilityState === 'visible') fetchNotes(true)
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)

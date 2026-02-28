@@ -76,9 +76,9 @@ export default function MeetingsPage() {
     : null
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden">
-      {/* Left sidebar */}
-      <div className="w-[280px] shrink-0 border-r border-gray-200/50 dark:border-white/5 flex flex-col bg-white/60 dark:bg-white/[0.03]">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+      {/* Left sidebar — full width on mobile */}
+      <div className="w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-gray-200/50 dark:border-white/5 flex flex-col bg-white/60 dark:bg-white/[0.03]">
         <div className="p-3 space-y-2 shrink-0">
           <button
             onClick={() => setShowNewModal(true)}
@@ -144,8 +144,8 @@ export default function MeetingsPage() {
         </div>
       </div>
 
-      {/* Right content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Right content — hidden on mobile since detail is shown in a modal */}
+      <div className="hidden md:flex flex-1 flex-col overflow-hidden">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center">

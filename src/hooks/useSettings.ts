@@ -8,9 +8,9 @@ export function useSettings() {
   const [settings, setSettings] = useState<UserSettings | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = useCallback(async (silent = false) => {
     if (!user) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -57,7 +57,7 @@ export function useSettings() {
   // Refetch when tab becomes visible again (handles missed events during sleep/background)
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchSettings()
+      if (document.visibilityState === 'visible') fetchSettings(true)
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)

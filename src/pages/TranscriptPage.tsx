@@ -56,9 +56,9 @@ export default function TranscriptPage() {
   }
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden">
-      {/* Left sidebar panel */}
-      <div className="w-[280px] shrink-0 border-r border-gray-200/50 dark:border-white/5 flex flex-col bg-white/60 dark:bg-white/[0.03]">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
+      {/* Left sidebar panel — hidden on mobile when viewing a transcript */}
+      <div className={`${selectedId ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] shrink-0 border-b md:border-b-0 md:border-r border-gray-200/50 dark:border-white/5 flex-col bg-white/60 dark:bg-white/[0.03]`}>
         {/* Search + New button */}
         <div className="p-3 space-y-2 shrink-0">
           {/* New transcript button */}
@@ -127,8 +127,18 @@ export default function TranscriptPage() {
         )}
       </div>
 
-      {/* Right content panel */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Right content panel — hidden on mobile when nothing selected */}
+      <div className={`${!selectedId ? 'hidden md:flex' : 'flex'} flex-1 flex-col overflow-hidden`}>
+        {selectedTranscript && (
+          <div className="md:hidden flex items-center gap-2 px-3 py-2 border-b border-gray-200/50 dark:border-white/5 shrink-0 bg-white/60 dark:bg-white/[0.03]">
+            <button onClick={() => setSelectedId(null)} className="p-1.5 rounded-lg hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{selectedTranscript.title}</span>
+          </div>
+        )}
         {selectedTranscript ? (
           <TranscriptViewer
             key={selectedTranscript.id}

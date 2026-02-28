@@ -92,7 +92,7 @@ export default function MoveFileModal({
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="w-80 max-h-[60vh] glass-panel-solid rounded-xl shadow-2xl flex flex-col animate-[scaleIn_0.15s_ease-out]"
+        className="w-[92vw] max-w-80 max-h-[60vh] glass-panel-solid rounded-xl shadow-2xl flex flex-col animate-[scaleIn_0.15s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-gray-200/50 dark:border-white/5">

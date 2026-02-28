@@ -309,7 +309,7 @@ function GridCard({
         onClick={hasAnySelection ? (e) => { e.stopPropagation(); onToggleSelect() } : onSelect}
         onContextMenu={handleContextMenu}
         style={cardBgStyle}
-        className={`group relative glass-card rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
+        className={`group relative glass-card rounded-xl sm:rounded-2xl p-2 sm:p-4 aspect-square sm:aspect-auto cursor-pointer transition-all duration-200 hover:scale-[1.02] overflow-hidden ${
           isSelected ? 'ring-2 ring-[var(--accent)] shadow-md' : ''
         } ${isDragOver ? 'ring-2 ring-[var(--accent)]/50 scale-[1.03]' : ''} ${isChecked ? 'ring-2 ring-[var(--accent)]' : ''}`}
       >
@@ -317,7 +317,7 @@ function GridCard({
         {(isChecked || hasAnySelection) && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleSelect() }}
-            className={`absolute top-3 right-3 z-20 w-5 h-5 rounded-md flex items-center justify-center shadow-sm transition-all ${
+            className={`absolute top-1.5 sm:top-3 right-1.5 sm:right-3 z-20 w-4 sm:w-5 h-4 sm:h-5 rounded-md flex items-center justify-center shadow-sm transition-all ${
               isChecked
                 ? 'bg-[var(--accent)]'
                 : 'border-2 border-gray-300 dark:border-gray-500 bg-white/80 dark:bg-white/10 opacity-0 group-hover:opacity-100'
@@ -335,11 +335,11 @@ function GridCard({
         <button
           ref={menuBtnRef}
           onClick={handleMenuClick}
-          className={`absolute top-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-all z-10 ${
-            hasAnySelection ? 'right-10' : 'right-3'
+          className={`absolute top-1.5 sm:top-3 p-1 sm:p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-200/80 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-all z-10 ${
+            hasAnySelection ? 'right-7 sm:right-10' : 'right-1.5 sm:right-3'
           }`}
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="5" r="1.5" />
             <circle cx="12" cy="12" r="1.5" />
             <circle cx="12" cy="19" r="1.5" />
@@ -348,13 +348,13 @@ function GridCard({
 
         {/* Pin indicator */}
         {note.pinned && (
-          <div className="absolute top-3 left-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] block" />
+          <div className="absolute top-1.5 sm:top-3 left-1.5 sm:left-3">
+            <span className="w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 rounded-full bg-[var(--accent)] block" />
           </div>
         )}
 
         {/* Title */}
-        <div className="pr-8 mb-2">
+        <div className="pr-6 sm:pr-8 mb-1 sm:mb-2">
           {editing ? (
             <input
               type="text"
@@ -367,29 +367,29 @@ function GridCard({
               }}
               onClick={e => e.stopPropagation()}
               autoFocus
-              className="w-full bg-transparent font-semibold text-sm focus:outline-none border-b border-[var(--accent)] text-gray-900 dark:text-white"
+              className="w-full bg-transparent font-semibold text-[11px] sm:text-sm focus:outline-none border-b border-[var(--accent)] text-gray-900 dark:text-white"
             />
           ) : (
-            <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+            <h3 className="font-semibold text-[11px] sm:text-sm text-gray-900 dark:text-white truncate">
               {highlightText(note.title, searchQuery)}
             </h3>
           )}
         </div>
 
-        {/* Content preview */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 mb-3 leading-relaxed min-h-[3rem]">
+        {/* Content preview — hidden on mobile to fit square card */}
+        <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 line-clamp-3 mb-3 leading-relaxed min-h-[3rem]">
           {plainContent ? highlightText(plainContent, searchQuery) : 'Empty note'}
         </p>
 
         {/* Footer: type badge + expiration + date */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <span className={`text-[8px] sm:text-[10px] font-medium px-1 sm:px-2 py-0.5 rounded-full ${typeInfo.color}`}>
               {typeInfo.label}
             </span>
-            {note.expires_at && <ExpirationBadge expiresAt={note.expires_at} />}
+            {note.expires_at && <span className="hidden sm:inline"><ExpirationBadge expiresAt={note.expires_at} /></span>}
           </div>
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">
+          <span className="hidden sm:inline text-[10px] text-gray-400 dark:text-gray-500">
             {new Date(note.updated_at).toLocaleDateString()}
           </span>
         </div>
@@ -397,7 +397,7 @@ function GridCard({
         {/* Color bar at bottom */}
         {note.color && (
           <div
-            className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full"
+            className="absolute bottom-0 left-2 sm:left-4 right-2 sm:right-4 h-0.5 rounded-full"
             style={{ backgroundColor: note.color }}
           />
         )}
@@ -555,7 +555,7 @@ export default function GridView({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {notes.map((note, idx) => (
             <GridCard
               key={note.id}
@@ -584,12 +584,12 @@ export default function GridView({
           {/* Add Note card */}
           <button
             onClick={onCreateNote}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all duration-200 hover:scale-[1.02] min-h-[160px]"
+            className="flex flex-col items-center justify-center gap-1 sm:gap-2 rounded-xl sm:rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all duration-200 hover:scale-[1.02] aspect-square sm:aspect-auto sm:min-h-[160px]"
           >
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-sm font-medium">New Note</span>
+            <span className="text-[10px] sm:text-sm font-medium">New Note</span>
           </button>
         </div>
       )}
