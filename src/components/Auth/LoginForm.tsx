@@ -42,7 +42,7 @@ export default function LoginForm() {
         <div className="text-center mb-8">
           <Logo className="mx-auto" />
           <p className="mt-3 text-gray-500 dark:text-gray-400 text-lg">
-            Your notes, beautifully organized.
+            You script, we encrypt.
           </p>
         </div>
 
