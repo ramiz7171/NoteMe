@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "CriptNote",
+    "slug": "criptnote",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "criptnote",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.criptnote.app",
+      "associatedDomains": ["applinks:criptnote.app"],
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to unlock CriptNote",
+        "NSMicrophoneUsageDescription": "Record audio for transcriptions",
+        "NSCameraUsageDescription": "Scan QR codes for MFA setup",
+        "NSPhotoLibraryUsageDescription": "Save exported board images"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.criptnote.app",
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "RECORD_AUDIO",
+        "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "criptnote.app",
+              "pathPrefix": "/share"
+            },
+            {
+              "scheme": "criptnote"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-local-authentication",
+      ["expo-camera", { "cameraPermission": "Scan QR codes for MFA setup" }],
+      ["expo-av", { "microphonePermission": "Record audio for transcriptions" }],
+      "expo-notifications",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

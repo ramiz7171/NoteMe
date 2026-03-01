@@ -1,0 +1,244 @@
+import { useEffect, useState, useCallback } from 'react'
+import { AppState } from 'react-native'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import { isEncrypted } from '../lib/crypto'
+import type { Note, NoteType } from '@shared/types'
+import { DELETED_RETENTION_DAYS } from '@shared/lib/constants'
+
+interface UseNotesOptions {
+  encrypt?: (content: string) => Promise<string>
+  decrypt?: (content: string) => Promise<string>
+}
+
+export function useNotes(opts?: UseNotesOptions) {
+  const { user } = useAuth()
+  const [notes, setNotes] = useState<Note[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const decryptNote = useCallback(async (note: Note): Promise<Note> => {
+    if (!opts?.decrypt || !note.content || !isEncrypted(note.content)) return note
+    const content = await opts.decrypt(note.content)
+    return { ...note, content }
+  }, [opts])
+
+  const decryptNotes = useCallback(async (rawNotes: Note[]): Promise<Note[]> => {
+    if (!opts?.decrypt) return rawNotes
+    return Promise.all(rawNotes.map(decryptNote))
+  }, [opts, decryptNote])
+
+  const fetchNotes = useCallback(async (silent = false) => {
+    if (!user) return
+    if (!silent) setLoading(true)
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+    if (!error && data) {
+      const decrypted = await decryptNotes(data as Note[])
+      setNotes(decrypted)
+    }
+    setLoading(false)
+  }, [user?.id, decryptNotes])
+
+  useEffect(() => { fetchNotes() }, [fetchNotes])
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel('notes-realtime')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'notes',
+        filter: `user_id=eq.${user.id}`,
+      }, async (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const decrypted = await decryptNote(payload.new as Note)
+          setNotes(prev => {
+            if (prev.some(n => n.id === decrypted.id)) return prev
+            return [decrypted, ...prev]
+          })
+        } else if (payload.eventType === 'UPDATE') {
+          const decrypted = await decryptNote(payload.new as Note)
+          setNotes(prev => prev.map(n => (n.id === decrypted.id ? decrypted : n)))
+        } else if (payload.eventType === 'DELETE') {
+          setNotes(prev => prev.filter(n => n.id !== (payload.old as Note).id))
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, decryptNote])
+
+  // Refetch when app returns to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') fetchNotes(true)
+    })
+    return () => sub.remove()
+  }, [fetchNotes])
+
+  const createNote = async (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => {
+    if (!user) return { error: new Error('Not authenticated'), data: null }
+    const contentToSave = opts?.encrypt ? await opts.encrypt(content) : content
+    const { data, error } = await supabase.from('notes').insert({
+      user_id: user.id, title, content: contentToSave, note_type: noteType,
+      ...(expiresAt !== undefined ? { expires_at: expiresAt } : {}),
+    }).select().single()
+    if (!error && data) {
+      setNotes(prev => {
+        if (prev.some(n => n.id === data.id)) return prev
+        return [{ ...data as Note, content }, ...prev]
+      })
+    }
+    return { error, data: data as Note | null }
+  }
+
+  const updateNote = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number; expires_at?: string | null }) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates, updated_at: new Date().toISOString() } : n))
+    const dbUpdates = { ...updates }
+    if (dbUpdates.content && opts?.encrypt) {
+      dbUpdates.content = await opts.encrypt(dbUpdates.content)
+    }
+    const { error } = await supabase.from('notes').update(dbUpdates).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const updateNoteColor = async (id: string, color: string) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, color } : n))
+    const { error } = await supabase.from('notes').update({ color }).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const deleteNote = async (id: string) => {
+    const now = new Date().toISOString()
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, deleted_at: now } : n))
+    const { error } = await supabase.from('notes').update({ deleted_at: now }).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const permanentDeleteNote = async (id: string) => {
+    setNotes(prev => prev.filter(n => n.id !== id))
+    const { error } = await supabase.from('notes').delete().eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const permanentDeleteAll = async () => {
+    const deletedIds = notes.filter(n => n.deleted_at).map(n => n.id)
+    if (deletedIds.length === 0) return
+    setNotes(prev => prev.filter(n => !n.deleted_at))
+    await supabase.from('notes').delete().in('id', deletedIds)
+  }
+
+  const restoreNote = async (id: string) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, deleted_at: null } : n))
+    const { error } = await supabase.from('notes').update({ deleted_at: null }).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const archiveNote = async (id: string) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, archived: true } : n))
+    const { error } = await supabase.from('notes').update({ archived: true }).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const unarchiveNote = async (id: string) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, archived: false } : n))
+    const { error } = await supabase.from('notes').update({ archived: false }).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const pinNote = async (id: string) => {
+    const note = notes.find(n => n.id === id)
+    const newPinned = !note?.pinned
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, pinned: newPinned } : n))
+    const { error } = await supabase.from('notes').update({ pinned: newPinned }).eq('id', id)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const moveToFolder = async (noteId: string, folderId: string | null) => {
+    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, folder_id: folderId } : n))
+    const { error } = await supabase.from('notes').update({ folder_id: folderId }).eq('id', noteId)
+    if (error) fetchNotes()
+    return { error }
+  }
+
+  const bulkMoveToFolder = async (noteIds: string[], folderId: string | null) => {
+    setNotes(prev => prev.map(n => noteIds.includes(n.id) ? { ...n, folder_id: folderId } : n))
+    await supabase.from('notes').update({ folder_id: folderId }).in('id', noteIds)
+  }
+
+  const bulkDelete = async (noteIds: string[]) => {
+    const now = new Date().toISOString()
+    setNotes(prev => prev.map(n => noteIds.includes(n.id) ? { ...n, deleted_at: now } : n))
+    await supabase.from('notes').update({ deleted_at: now }).in('id', noteIds)
+  }
+
+  const bulkArchive = async (noteIds: string[]) => {
+    setNotes(prev => prev.map(n => noteIds.includes(n.id) ? { ...n, archived: true } : n))
+    await supabase.from('notes').update({ archived: true }).in('id', noteIds)
+  }
+
+  // Filters
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - DELETED_RETENTION_DAYS)
+  const now = Date.now()
+  const isExpired = (n: Note) => n.expires_at && new Date(n.expires_at).getTime() <= now
+
+  // Client-side cleanup of expired notes
+  useEffect(() => {
+    const expired = notes.filter(isExpired)
+    if (expired.length === 0) return
+    const ids = expired.map(n => n.id)
+    setNotes(prev => prev.filter(n => !ids.includes(n.id)))
+    supabase.from('notes').delete().in('id', ids)
+  }, [notes.length])
+
+  const activeNotes = notes.filter(n => !n.archived && !n.deleted_at && !isExpired(n))
+  const archivedNotes = notes.filter(n => n.archived && !n.deleted_at && !isExpired(n))
+  const deletedNotes = notes.filter(n => n.deleted_at && new Date(n.deleted_at) > cutoff)
+
+  const sortNotes = (list: Note[]) => [...list].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1
+    if (!a.pinned && b.pinned) return 1
+    if (a.position > 0 && b.position > 0) return a.position - b.position
+    if (a.position > 0) return -1
+    if (b.position > 0) return 1
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  })
+
+  const unfiledActive = activeNotes.filter(n => !n.folder_id)
+  const basicNotes = sortNotes(unfiledActive.filter(n => n.note_type === 'basic' || n.note_type === 'checkbox'))
+  const boardNotes = sortNotes(activeNotes.filter(n => n.note_type === 'board'))
+  const codeNotes = {
+    java: sortNotes(unfiledActive.filter(n => n.note_type === 'java')),
+    javascript: sortNotes(unfiledActive.filter(n => n.note_type === 'javascript')),
+    python: sortNotes(unfiledActive.filter(n => n.note_type === 'python')),
+    sql: sortNotes(unfiledActive.filter(n => n.note_type === 'sql')),
+  }
+
+  const folderNotes: Record<string, Note[]> = {}
+  for (const n of activeNotes) {
+    if (n.folder_id) {
+      if (!folderNotes[n.folder_id]) folderNotes[n.folder_id] = []
+      folderNotes[n.folder_id].push(n)
+    }
+  }
+  for (const fid of Object.keys(folderNotes)) {
+    folderNotes[fid] = sortNotes(folderNotes[fid])
+  }
+
+  return {
+    notes, basicNotes, boardNotes, codeNotes, archivedNotes, deletedNotes, folderNotes, loading,
+    createNote, updateNote, updateNoteColor, deleteNote, permanentDeleteNote, permanentDeleteAll, restoreNote,
+    archiveNote, unarchiveNote, pinNote, moveToFolder, bulkMoveToFolder, bulkDelete, bulkArchive, refetch: fetchNotes,
+  }
+}
