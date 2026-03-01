@@ -309,7 +309,7 @@ function GridCard({
         onClick={hasAnySelection ? (e) => { e.stopPropagation(); onToggleSelect() } : onSelect}
         onContextMenu={handleContextMenu}
         style={cardBgStyle}
-        className={`group relative glass-card rounded-xl sm:rounded-2xl p-2 sm:p-4 aspect-square sm:aspect-[1/2] cursor-pointer transition-all duration-200 hover:scale-[1.02] overflow-hidden ${
+        className={`group relative glass-card rounded-xl sm:rounded-2xl p-2 sm:p-4 aspect-square sm:aspect-auto sm:max-h-[180px] cursor-pointer transition-all duration-200 hover:scale-[1.02] overflow-hidden ${
           isSelected ? 'ring-2 ring-[var(--accent)] shadow-md' : ''
         } ${isDragOver ? 'ring-2 ring-[var(--accent)]/50 scale-[1.03]' : ''} ${isChecked ? 'ring-2 ring-[var(--accent)]' : ''}`}
       >
