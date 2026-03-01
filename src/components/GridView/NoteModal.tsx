@@ -101,8 +101,8 @@ export default function NoteModal({ note, onClose, onUpdate, onDelete }: NoteMod
     >
       <div
         style={panelStyle}
-        className={`${size ? '' : 'w-[92vw] max-w-5xl h-[80vh] md:h-[75vh]'} glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 relative ${
-          closing ? 'opacity-0 scale-95' : 'animate-[scaleIn_0.15s_ease-out]'
+        className={`${size ? '' : 'w-[92vw] max-w-5xl h-[80vh] md:h-[75vh]'} glass-panel-solid rounded-2xl shadow-2xl flex flex-col overflow-hidden relative ${
+          closing ? 'opacity-0 scale-95 transition-all duration-200' : 'animate-[scaleIn_0.15s_ease-out]'
         }`}
         onClick={e => e.stopPropagation()}
       >
