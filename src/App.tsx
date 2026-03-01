@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { EncryptionProvider } from './context/EncryptionContext'
 import { SecurityProvider, useSecurity } from './context/SecurityContext'
+import WelcomePage from './pages/WelcomePage'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import SharedFilePage from './pages/SharedFilePage'
@@ -37,7 +38,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return user ? <Navigate to="/" replace /> : <>{children}</>
+  return user ? <Navigate to="/app" replace /> : <>{children}</>
 }
 
 export default function App() {
@@ -48,8 +49,9 @@ export default function App() {
           <SecurityProvider>
             <EncryptionProvider>
               <Routes>
+                <Route path="/" element={<PublicRoute><WelcomePage /></PublicRoute>} />
                 <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/share/:shareId" element={<SharedFilePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

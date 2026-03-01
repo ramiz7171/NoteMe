@@ -1,4 +1,6 @@
 import { supabase } from './supabase'
+import { parseUserAgent } from './parseUserAgent'
+import { getCachedGeoLocation } from './geolocation'
 import type { Json } from '../types'
 
 export type AuditAction =
@@ -19,12 +21,21 @@ export async function logAuditEvent(
   details?: Record<string, unknown>
 ): Promise<void> {
   try {
+    const geo = await getCachedGeoLocation()
+    const ua = parseUserAgent(navigator.userAgent)
+
     await supabase.from('audit_logs').insert({
       user_id: userId,
       action,
       resource_type: resourceType ?? null,
       resource_id: resourceId ?? null,
-      details: (details ?? {}) as Json,
+      details: {
+        ...(details ?? {}),
+        browser: ua.browser,
+        os: ua.os,
+        device: ua.device,
+        ...(geo ? { city: geo.city, region: geo.region, country: geo.country } : {}),
+      } as Json,
       device_info: navigator.userAgent,
     })
   } catch {

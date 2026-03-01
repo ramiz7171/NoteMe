@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { parseUserAgent } from '../lib/parseUserAgent'
 
 export interface SessionEntry {
   id: string
@@ -13,17 +14,9 @@ export interface SessionEntry {
   is_current: boolean
 }
 
-function parseUserAgent(ua: string): string {
-  if (/Mobile|Android|iPhone|iPad/.test(ua)) {
-    if (/iPhone|iPad/.test(ua)) return 'iOS Device'
-    if (/Android/.test(ua)) return 'Android Device'
-    return 'Mobile Device'
-  }
-  if (/Chrome/.test(ua) && !/Edg/.test(ua)) return 'Chrome Desktop'
-  if (/Edg/.test(ua)) return 'Edge Desktop'
-  if (/Firefox/.test(ua)) return 'Firefox Desktop'
-  if (/Safari/.test(ua)) return 'Safari Desktop'
-  return 'Unknown Browser'
+function formatDeviceInfo(ua: string): string {
+  const { browser, device } = parseUserAgent(ua)
+  return `${browser} ${device}`
 }
 
 export function useSessions() {
@@ -53,7 +46,7 @@ export function useSessions() {
       setSessions((data as unknown as SessionEntry[]).map(s => ({
         ...s,
         is_current: s.session_token === tokenId,
-        device_info: s.device_info || parseUserAgent(navigator.userAgent),
+        device_info: s.device_info || formatDeviceInfo(navigator.userAgent),
       })))
     }
     setLoading(false)
@@ -78,13 +71,13 @@ export function useSessions() {
       if (existing) {
         await supabase
           .from('sessions')
-          .update({ last_active_at: new Date().toISOString(), device_info: parseUserAgent(navigator.userAgent) })
+          .update({ last_active_at: new Date().toISOString(), device_info: formatDeviceInfo(navigator.userAgent) })
           .eq('id', existing.id)
       } else {
         await supabase.from('sessions').insert({
           user_id: user.id,
           session_token: tokenId,
-          device_info: parseUserAgent(navigator.userAgent),
+          device_info: formatDeviceInfo(navigator.userAgent),
           ip_address: '',
           is_current: true,
         })

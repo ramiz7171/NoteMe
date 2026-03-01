@@ -1,4 +1,5 @@
 import { useAuditLog, type AuditLogEntry } from '../../hooks/useAuditLog'
+import { formatUserAgent } from '../../lib/parseUserAgent'
 
 const ACTION_LABELS: Record<string, string> = {
   'auth.login': 'Signed in',
@@ -28,19 +29,6 @@ const ACTION_COLORS: Record<string, string> = {
   settings: 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const secs = Math.floor(diff / 1000)
-  if (secs < 60) return 'Just now'
-  const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-  return new Date(dateStr).toLocaleDateString()
-}
-
 export default function AuditLogList() {
   const { logs, loading, hasMore, loadMore } = useAuditLog()
 
@@ -61,23 +49,40 @@ export default function AuditLogList() {
       {logs.map((log: AuditLogEntry) => {
         const category = log.action.split('.')[0]
         const colorClass = ACTION_COLORS[category] || ACTION_COLORS.settings
+        const d = log.details as Record<string, unknown> | null
+
+        const browserDisplay =
+          d?.browser && d?.os
+            ? `${d.browser} on ${d.os}`
+            : log.device_info
+              ? formatUserAgent(log.device_info)
+              : null
+
+        const locationParts = [d?.city, d?.region, d?.country].filter(Boolean) as string[]
+        const locationDisplay = locationParts.length > 0 ? locationParts.join(', ') : null
+
+        const dateDisplay = new Date(log.created_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
 
         return (
-          <div key={log.id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
-            <span className={`shrink-0 px-1.5 py-0.5 text-[9px] font-semibold rounded-full ${colorClass}`}>
+          <div key={log.id} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors">
+            <span className={`shrink-0 mt-0.5 px-1.5 py-0.5 text-[9px] font-semibold rounded-full ${colorClass}`}>
               {category}
             </span>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
                 {ACTION_LABELS[log.action] || log.action}
-                {log.details && !!(log.details as Record<string, unknown>).title && (
-                  <span className="text-gray-400 dark:text-gray-500"> — {String((log.details as Record<string, unknown>).title)}</span>
+                {d?.title && (
+                  <span className="text-gray-400 dark:text-gray-500"> — {String(d.title)}</span>
                 )}
               </p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                {[browserDisplay, locationDisplay, dateDisplay].filter(Boolean).join('  ·  ')}
+              </p>
             </div>
-            <span className="shrink-0 text-[10px] text-gray-400 dark:text-gray-500">
-              {timeAgo(log.created_at)}
-            </span>
           </div>
         )
       })}

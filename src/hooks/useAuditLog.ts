@@ -13,7 +13,8 @@ export interface AuditLogEntry {
   created_at: string
 }
 
-const PAGE_SIZE = 20
+const INITIAL_PAGE_SIZE = 4
+const PAGE_SIZE = 10
 
 export function useAuditLog() {
   const { user } = useAuth()
@@ -24,12 +25,13 @@ export function useAuditLog() {
   const fetchLogs = useCallback(async (offset = 0) => {
     if (!user) return
     if (offset === 0) setLoading(true)
+    const limit = offset === 0 ? INITIAL_PAGE_SIZE : PAGE_SIZE
     const { data, error } = await supabase
       .from('audit_logs')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1)
+      .range(offset, offset + limit - 1)
 
     if (!error && data) {
       const entries = data as unknown as AuditLogEntry[]
@@ -38,7 +40,7 @@ export function useAuditLog() {
       } else {
         setLogs(prev => [...prev, ...entries])
       }
-      setHasMore(entries.length === PAGE_SIZE)
+      setHasMore(entries.length === limit)
     }
     setLoading(false)
   }, [user])
