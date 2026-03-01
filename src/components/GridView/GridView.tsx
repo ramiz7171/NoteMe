@@ -382,7 +382,7 @@ function GridCard({
         </p>
 
         {/* Footer: type badge + expiration + date */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-4">
           <div className="flex items-center gap-1.5">
             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>
               {typeInfo.label}
@@ -555,7 +555,7 @@ export default function GridView({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
           {notes.map((note, idx) => (
             <GridCard
               key={note.id}
