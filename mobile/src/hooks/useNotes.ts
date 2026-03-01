@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { AppState } from 'react-native'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -15,6 +15,9 @@ export function useNotes(opts?: UseNotesOptions) {
   const { user } = useAuth()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Track note IDs with pending local updates to avoid realtime overwrites
+  const pendingUpdatesRef = useRef<Set<string>>(new Set())
 
   const decryptNote = useCallback(async (note: Note): Promise<Note> => {
     if (!opts?.decrypt || !note.content || !isEncrypted(note.content)) return note
@@ -60,8 +63,11 @@ export function useNotes(opts?: UseNotesOptions) {
             return [decrypted, ...prev]
           })
         } else if (payload.eventType === 'UPDATE') {
-          const decrypted = await decryptNote(payload.new as Note)
-          setNotes(prev => prev.map(n => (n.id === decrypted.id ? decrypted : n)))
+          const incoming = payload.new as Note
+          // If this note has a pending local update, skip realtime to avoid overwriting
+          if (pendingUpdatesRef.current.has(incoming.id)) return
+          const decrypted = await decryptNote(incoming)
+          setNotes(prev => prev.map(n => (n.id === decrypted.id ? { ...n, ...decrypted } : n)))
         } else if (payload.eventType === 'DELETE') {
           setNotes(prev => prev.filter(n => n.id !== (payload.old as Note).id))
         }
@@ -95,20 +101,24 @@ export function useNotes(opts?: UseNotesOptions) {
   }
 
   const updateNote = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number; expires_at?: string | null }) => {
+    pendingUpdatesRef.current.add(id)
     setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates, updated_at: new Date().toISOString() } : n))
     const dbUpdates = { ...updates }
     if (dbUpdates.content && opts?.encrypt) {
       dbUpdates.content = await opts.encrypt(dbUpdates.content)
     }
     const { error } = await supabase.from('notes').update(dbUpdates).eq('id', id)
-    if (error) fetchNotes()
+    setTimeout(() => pendingUpdatesRef.current.delete(id), 1500)
+    if (error) { pendingUpdatesRef.current.delete(id); fetchNotes() }
     return { error }
   }
 
   const updateNoteColor = async (id: string, color: string) => {
+    pendingUpdatesRef.current.add(id)
     setNotes(prev => prev.map(n => n.id === id ? { ...n, color } : n))
     const { error } = await supabase.from('notes').update({ color }).eq('id', id)
-    if (error) fetchNotes()
+    setTimeout(() => pendingUpdatesRef.current.delete(id), 1500)
+    if (error) { pendingUpdatesRef.current.delete(id); fetchNotes() }
     return { error }
   }
 
