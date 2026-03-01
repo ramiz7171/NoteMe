@@ -150,10 +150,18 @@ function GridCard({
     borderColor: `${note.color}30`,
   } : {}
 
-  // Strip HTML/markdown for preview
+  // Strip HTML/markdown for preview — convert block tags to spaces first
   const plainContent = (note.content || '')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6]|tr|blockquote)>/gi, ' ')
     .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
     .replace(/[#*_~`>-]/g, '')
+    .replace(/\s+/g, ' ')
     .trim()
 
   const menuContent = (
@@ -377,7 +385,7 @@ function GridCard({
         </div>
 
         {/* Content preview */}
-        <p className="flex-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-2 sm:line-clamp-3 leading-relaxed overflow-hidden">
+        <p className="flex-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-2 sm:line-clamp-3 leading-relaxed overflow-hidden break-words">
           {plainContent ? highlightText(plainContent, searchQuery) : 'Empty note'}
         </p>
 

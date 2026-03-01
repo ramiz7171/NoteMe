@@ -13,6 +13,21 @@ import type { Note } from '@shared/types'
 import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
+
+function stripHtmlPreview(html: string, maxLen: number): string {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6]|tr|blockquote)>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLen)
+}
 const CARD_WIDTH = (width - 48) / 2
 
 type Filter = 'all' | 'pinned' | 'archived' | 'trash'
@@ -27,7 +42,7 @@ function NoteCard({ note, onPress, colors }: { note: Note; onPress: () => void; 
       {note.pinned && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent, position: 'absolute', top: 12, right: 12 }} />}
       <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 }}>{note.title || 'Untitled'}</Text>
       <Text numberOfLines={3} style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 18 }}>
-        {note.content?.replace(/<[^>]*>/g, '').slice(0, 120) || 'Empty note'}
+        {note.content ? stripHtmlPreview(note.content, 120) : 'Empty note'}
       </Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
         <Text style={{ fontSize: 10, color: colors.textSecondary }}>{typeLabels[note.note_type] || note.note_type}</Text>
@@ -140,7 +155,7 @@ export default function NotesScreen() {
           <Ionicons name="archive-outline" size={18} color={colors.warning} />
           <View style={{ flex: 1 }}>
             <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{item.title || 'Untitled'}</Text>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{item.content?.replace(/<[^>]*>/g, '').slice(0, 80) || 'Empty'}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{item.content ? stripHtmlPreview(item.content, 80) : 'Empty'}</Text>
           </View>
           <Ionicons name="arrow-undo-outline" size={16} color={colors.accent} />
         </TouchableOpacity>
@@ -160,7 +175,7 @@ export default function NotesScreen() {
         {item.pinned && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent }} />}
         <View style={{ flex: 1 }}>
           <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{item.title || 'Untitled'}</Text>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{item.content?.replace(/<[^>]*>/g, '').slice(0, 80) || 'Empty'}</Text>
+          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{item.content ? stripHtmlPreview(item.content, 80) : 'Empty'}</Text>
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
       </TouchableOpacity>
