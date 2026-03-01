@@ -28,7 +28,7 @@ export default function WelcomePage() {
       <div className="relative z-10 flex flex-col items-center justify-center px-6 text-center pt-[12vh] pb-6">
         <div className="mb-4 overflow-visible pb-2">
           <SplitText
-            text="Welcome to Cryptnote"
+            text="Welcome to CriptNote"
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white"
             delay={60}
             duration={0.8}
