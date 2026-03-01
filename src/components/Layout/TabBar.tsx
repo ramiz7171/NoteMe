@@ -3,13 +3,18 @@ import { createPortal } from 'react-dom'
 
 export const TAB_COLORS = [
   { key: 'none', label: 'None', value: '' },
-  { key: 'red', label: 'Red', value: '#ef4444' },
-  { key: 'orange', label: 'Orange', value: '#f97316' },
-  { key: 'yellow', label: 'Yellow', value: '#eab308' },
-  { key: 'green', label: 'Green', value: '#22c55e' },
-  { key: 'blue', label: 'Blue', value: '#3b82f6' },
-  { key: 'purple', label: 'Purple', value: '#a855f7' },
-  { key: 'pink', label: 'Pink', value: '#ec4899' },
+  { key: 'red', label: 'Red', value: '#dc2626' },
+  { key: 'orange', label: 'Orange', value: '#ea580c' },
+  { key: 'amber', label: 'Amber', value: '#d97706' },
+  { key: 'yellow', label: 'Yellow', value: '#ca8a04' },
+  { key: 'lime', label: 'Lime', value: '#65a30d' },
+  { key: 'green', label: 'Green', value: '#16a34a' },
+  { key: 'teal', label: 'Teal', value: '#0d9488' },
+  { key: 'cyan', label: 'Cyan', value: '#0891b2' },
+  { key: 'blue', label: 'Blue', value: '#2563eb' },
+  { key: 'indigo', label: 'Indigo', value: '#4f46e5' },
+  { key: 'purple', label: 'Purple', value: '#9333ea' },
+  { key: 'pink', label: 'Pink', value: '#db2777' },
 ]
 
 export interface Tab {

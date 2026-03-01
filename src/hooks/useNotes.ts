@@ -133,7 +133,7 @@ export function useNotes(opts?: UseNotesOptions) {
 
   const updateNoteColor = async (id: string, color: string) => {
     setNotes(prev => prev.map(n => n.id === id ? { ...n, color } : n))
-    const { error } = await supabase.from('notes').update({ color }).eq('id', id)
+    const { error } = await supabase.from('notes').update({ color: color || undefined }).eq('id', id)
     if (error) fetchNotes()
     return { error }
   }
