@@ -549,7 +549,7 @@ export default function Sidebar({
   )
 
   return (
-    <aside className={`w-full md:w-[280px] shrink-0 border-r border-gray-200/50 dark:border-white/5 flex flex-col h-full bg-white dark:bg-[#1a1a1a] md:bg-white/60 md:dark:bg-white/[0.03] relative sidebar-slide ${isHidden ? 'sidebar-hidden' : ''}`}>
+    <aside className={`w-full md:w-[280px] shrink-0 border-r border-gray-200/50 dark:border-white/5 flex flex-col h-full bg-white dark:bg-[#1a1a1a] md:bg-white/60 md:dark:bg-[#1a1a1a]/95 relative sidebar-slide ${isHidden ? 'sidebar-hidden' : ''}`}>
       {/* New Note + Search */}
       <div className="p-2 md:p-3 space-y-1.5 md:space-y-2 shrink-0">
         <button
