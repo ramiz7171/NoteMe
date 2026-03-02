@@ -510,7 +510,6 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
           const sumUsage = user ? getDailyUsage('summarize', user.id, AI_LIMITS.summarize.daily) : { remaining: 0 }
           const noUses = !isAdmin && sumUsage.remaining <= 0
           const busy = summarizing || fixingGrammar || fixingCode
-          const disabled = busy || !hasText || noUses
           return (
             <button
               onClick={async () => {
