@@ -51,7 +51,7 @@ export default function LoginForm() {
       <div className="text-center mb-8 animate-[fadeInUp_0.8s_ease-out_both]">
         <FingerprintLogo />
         <h1 className="text-2xl font-bold text-white mt-2 tracking-tight">
-          CriptNote
+          Criptnote
         </h1>
         <p className="mt-1 text-gray-500 text-sm">
           You script, we encrypt.

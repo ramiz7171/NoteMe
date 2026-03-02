@@ -122,6 +122,8 @@ export default function TranscriptPage() {
             transcripts={transcripts}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            onRename={(id, title) => handleUpdate(id, { title })}
+            onDelete={handleDelete}
             searchQuery={searchQuery}
           />
         )}
