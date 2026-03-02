@@ -1,4 +1,5 @@
-import { FC, useRef, useState, useEffect, useMemo, MutableRefObject } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
+import type { FC, MutableRefObject } from 'react';
 import { quat, vec2, vec3 } from 'gl-matrix';
 
 /* ------------------------------------------------------------------ */
@@ -6,7 +7,14 @@ import { quat, vec2, vec3 } from 'gl-matrix';
 /* ------------------------------------------------------------------ */
 
 class Face {
-  constructor(public a: number, public b: number, public c: number) {}
+  a: number;
+  b: number;
+  c: number;
+  constructor(a: number, b: number, c: number) {
+    this.a = a;
+    this.b = b;
+    this.c = c;
+  }
 }
 
 class Vertex {

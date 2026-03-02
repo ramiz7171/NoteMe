@@ -96,7 +96,7 @@ export function useFolders() {
 
   const updateFolderColor = async (id: string, color: string | null) => {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, color } : f))
-    const { error } = await supabase.from('folders').update({ color }).eq('id', id)
+    const { error } = await supabase.from('folders').update({ color } as Record<string, unknown>).eq('id', id)
     if (error) fetchFolders()
     return { error }
   }

@@ -75,9 +75,9 @@ export default function AuditLogList() {
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
                 {ACTION_LABELS[log.action] || log.action}
-                {d?.title && (
+                {d?.title ? (
                   <span className="text-gray-400 dark:text-gray-500"> — {String(d.title)}</span>
-                )}
+                ) : null}
               </p>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                 {[browserDisplay, locationDisplay, dateDisplay].filter(Boolean).join('  ·  ')}
