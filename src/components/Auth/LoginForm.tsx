@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import Logo from '../Logo'
 import FingerprintLogo from './FingerprintLogo'
 import MfaVerifyModal from '../Security/MfaVerifyModal'
 
@@ -33,7 +32,6 @@ export default function LoginForm() {
     } else {
       const result = await signIn(email, password)
       if (result.error) setError(result.error.message)
-      // If MFA required, the modal will appear via mfaRequired state
     }
 
     setLoading(false)
@@ -48,109 +46,121 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-app-gradient px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Logo className="mx-auto" />
-          <FingerprintLogo />
-          <p className="mt-3 text-gray-500 dark:text-gray-400 text-lg">
-            You script, we encrypt.
-          </p>
+    <>
+      {/* Header */}
+      <div className="text-center mb-8 animate-[fadeInUp_0.8s_ease-out_both]">
+        <FingerprintLogo />
+        <h1 className="text-2xl font-bold text-white mt-2 tracking-tight">
+          CriptNote
+        </h1>
+        <p className="mt-1 text-gray-500 text-sm">
+          You script, we encrypt.
+        </p>
+      </div>
+
+      {/* Card */}
+      <div className="relative rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-5 sm:p-8 shadow-[0_0_40px_rgba(118,134,255,0.06)] animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
+        {/* Mode Tabs */}
+        <div className="flex gap-1 mb-6 bg-white/[0.06] rounded-xl p-1">
+          {([['login', 'Sign In'], ['signup', 'Sign Up'], ['magic-link', 'Magic Link']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => { setMode(key); setError(''); setMessage('') }}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                mode === key
+                  ? 'bg-white/[0.12] text-white shadow-sm shadow-black/20'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div className="glass-panel rounded-2xl p-5 sm:p-8 shadow-xl">
-          {/* Mode Tabs */}
-          <div className="flex gap-1 mb-6 bg-gray-100/80 dark:bg-white/5 rounded-xl p-1">
-            {([['login', 'Sign In'], ['signup', 'Sign Up'], ['magic-link', 'Magic Link']] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => { setMode(key); setError(''); setMessage('') }}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                  mode === key
-                    ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value.toLowerCase())}
-                  required
-                  className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
-                  placeholder="Choose a username"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === 'signup' && (
+            <div className="animate-[fadeInUp_0.3s_ease-out_both]">
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                Username
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value.toLowerCase())}
                 required
-                className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
-                placeholder="you@example.com"
+                className="w-full px-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 focus:border-[var(--accent)]/50 transition-all duration-200"
+                placeholder="Choose a username"
               />
             </div>
+          )}
 
-            {mode !== 'magic-link' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="w-full px-3 py-2.5 bg-gray-50/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-shadow"
-                  placeholder="Min. 6 characters"
-                />
-              </div>
-            )}
+          <div className="animate-[fadeInUp_0.6s_ease-out_0.3s_both]">
+            <label className="block text-sm font-medium text-gray-400 mb-1.5">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 focus:border-[var(--accent)]/50 transition-all duration-200"
+              placeholder="you@example.com"
+            />
+          </div>
 
-            {error && (
-              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-xl p-3">
-                {error}
-              </div>
-            )}
+          {mode !== 'magic-link' && (
+            <div className="animate-[fadeInUp_0.6s_ease-out_0.4s_both]">
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-2.5 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 focus:border-[var(--accent)]/50 transition-all duration-200"
+                placeholder="Min. 6 characters"
+              />
+            </div>
+          )}
 
-            {message && (
-              <div className="text-sm text-green-500 bg-green-50 dark:bg-green-500/10 rounded-xl p-3">
-                {message}
-              </div>
-            )}
+          {error && (
+            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3 animate-[fadeInUp_0.3s_ease-out_both]">
+              {error}
+            </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-black dark:bg-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black font-medium rounded-xl transition-all"
-            >
-              {loading
-                ? 'Please wait...'
-                : mode === 'login'
-                ? 'Sign In'
-                : mode === 'signup'
-                ? 'Create Account'
-                : 'Send Magic Link'}
-            </button>
-          </form>
-        </div>
+          {message && (
+            <div className="text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 animate-[fadeInUp_0.3s_ease-out_both]">
+              {message}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 bg-white text-black font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(118,134,255,0.25)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none animate-[fadeInUp_0.6s_ease-out_0.5s_both]"
+          >
+            {loading
+              ? 'Please wait...'
+              : mode === 'login'
+              ? 'Sign In'
+              : mode === 'signup'
+              ? 'Create Account'
+              : 'Send Magic Link'}
+          </button>
+        </form>
+      </div>
+
+      {/* Back link */}
+      <div className="text-center mt-6 animate-[fadeInUp_0.6s_ease-out_0.6s_both]">
+        <a
+          href="/"
+          className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
+        >
+          &larr; Back to home
+        </a>
       </div>
 
       {mfaRequired && mfaFactorId && (
@@ -161,6 +171,6 @@ export default function LoginForm() {
           onCancel={handleMfaCancel}
         />
       )}
-    </div>
+    </>
   )
 }

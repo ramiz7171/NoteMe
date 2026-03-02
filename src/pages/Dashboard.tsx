@@ -6,6 +6,7 @@ import TabBar, { type Tab } from '../components/Layout/TabBar'
 import Sidebar from '../components/Sidebar/Sidebar'
 import NoteEditor from '../components/Editor/NoteEditor'
 import GridView from '../components/GridView/GridView'
+import InfiniteView from '../components/InfiniteView/InfiniteView'
 import NoteModal from '../components/GridView/NoteModal'
 import SettingsPage from './SettingsPage'
 import TranscriptPage from './TranscriptPage'
@@ -21,8 +22,8 @@ import type { Note, NoteType } from '../types'
 /* ─── New Note Modal (resizable) ────────────────────────────────── */
 function NewNoteModal({ onClose, onSave, onUpdate, onDelete, noTitleCounter }: {
   onClose: () => void
-  onSave: (title: string, content: string, noteType: NoteType) => Promise<void>
-  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => Promise<{ error: unknown } | undefined>
+  onSave: (title: string, content: string, noteType: NoteType, expiresAt?: string | null, scheduledAt?: string | null) => Promise<void>
+  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null; scheduled_at?: string | null }) => Promise<{ error: unknown } | undefined>
   onDelete: (id: string) => Promise<{ error: unknown } | undefined>
   noTitleCounter: number
 }) {
@@ -127,18 +128,19 @@ export default function Dashboard() {
     ? { encrypt: encryptString, decrypt: decryptString }
     : undefined
   const { notes, basicNotes, boardNotes, codeNotes, archivedNotes, deletedNotes, folderNotes, loading, createNote, updateNote, updateNoteColor, updatePositions, deleteNote, permanentDeleteNote, permanentDeleteAll, restoreNote, archiveNote, unarchiveNote, pinNote, moveToFolder, bulkMoveToFolder, bulkDelete, bulkArchive } = useNotes(encryptOpts)
-  const { folders, createFolder, renameFolder, deleteFolder } = useFolders()
+  const { folders, createFolder, renameFolder, deleteFolder, updateFolderColor } = useFolders()
   const [tabs, setTabs] = useState<Tab[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [groupColors, setGroupColors] = useState<Record<string, string>>({})
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'infinite'>('grid')
   const [modalNoteId, setModalNoteId] = useState<string | null>(null)
   const [showNewNoteModal, setShowNewNoteModal] = useState(false)
   const [navSection, setNavSection] = useState<NavSection>('notes')
   const [macOpenOrigin, setMacOpenOrigin] = useState<string>('center center')
   const [gridSelectedIds, setGridSelectedIds] = useState<Set<string>>(new Set())
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
 
   // Compute noTitleCounter dynamically: find the next available "No title N"
   // Only count active notes (not deleted), so if "No title 1" is in trash, it's available
@@ -252,8 +254,8 @@ export default function Dashboard() {
     })
   }, [updateNoteColor])
 
-  const handleSaveNew = useCallback(async (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => {
-    const result = await createNote(title, content, noteType, expiresAt)
+  const handleSaveNew = useCallback(async (title: string, content: string, noteType: NoteType, expiresAt?: string | null, scheduledAt?: string | null) => {
+    const result = await createNote(title, content, noteType, expiresAt, scheduledAt)
     if (result?.error || !result?.data) return
 
     // Directly link the tab to the new note using the returned ID
@@ -402,14 +404,58 @@ export default function Dashboard() {
     })
   }, [basicNotes, codeNotes, folderNotes])
 
-  // Filter notes by search query (title + content)
+  // Filter notes by active folder + search query
   const filteredNotes = useMemo(() => {
-    if (!searchQuery) return allActiveNotes
-    const q = searchQuery.toLowerCase()
-    return allActiveNotes.filter(n =>
-      n.title.toLowerCase().includes(q) || (n.content || '').toLowerCase().includes(q)
-    )
-  }, [allActiveNotes, searchQuery])
+    let result = allActiveNotes
+    if (activeFolderId) {
+      result = result.filter(n => n.folder_id === activeFolderId)
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(n =>
+        n.title.toLowerCase().includes(q) || (n.content || '').toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [allActiveNotes, activeFolderId, searchQuery])
+
+  // In list (tab) mode, auto-populate tabs from all active notes
+  useEffect(() => {
+    if (viewMode !== 'list') return
+
+    setTabs(prev => {
+      const byNoteId = new Map<string, Tab>()
+      for (const t of prev) {
+        if (t.noteId) byNoteId.set(t.noteId, t)
+      }
+
+      const result: Tab[] = allActiveNotes.map(note => {
+        const existing = byNoteId.get(note.id)
+        if (existing) return { ...existing, title: note.title }
+        return {
+          id: `tab-${note.id}`,
+          noteId: note.id,
+          title: note.title,
+          color: note.color || '',
+          group: '',
+        }
+      })
+
+      // Keep unsaved "new note" tabs
+      for (const t of prev) {
+        if (!t.noteId) result.push(t)
+      }
+
+      return result
+    })
+  }, [viewMode, allActiveNotes])
+
+  // Auto-select first tab when entering list mode with no active tab
+  useEffect(() => {
+    if (viewMode === 'list' && !activeTabId && allActiveNotes.length > 0) {
+      setActiveTabId(`tab-${allActiveNotes[0].id}`)
+    }
+  }, [viewMode, activeTabId, allActiveNotes])
 
   const handleGridSelectNote = useCallback((note: Note) => {
     setModalNoteId(note.id)
@@ -445,7 +491,7 @@ export default function Dashboard() {
     }
   }
 
-  const handleUpdate = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => {
+  const handleUpdate = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null; scheduled_at?: string | null }) => {
     const result = await updateNote(id, updates)
     if (!result?.error && updates.title) {
       setTabs(prev => prev.map(t =>
@@ -474,10 +520,10 @@ export default function Dashboard() {
 
   // Close mobile sidebar when selecting a note
   const handleMobileSelectNote = useCallback((note: Note) => {
-    if (viewMode === 'grid') {
-      handleGridSelectNote(note)
-    } else {
+    if (viewMode === 'list') {
       openNoteInTab(note)
+    } else {
+      handleGridSelectNote(note)
     }
     setMobileSidebarOpen(false)
   }, [viewMode, handleGridSelectNote, openNoteInTab])
@@ -516,7 +562,7 @@ export default function Dashboard() {
               archivedNotes={archivedNotes}
               deletedNotes={deletedNotes}
               selectedNoteId={currentNote?.id ?? null}
-              onSelectNote={viewMode === 'grid' ? handleGridSelectNote : openNoteInTab}
+              onSelectNote={viewMode === 'list' ? openNoteInTab : handleGridSelectNote}
               onDeleteNote={handleSidebarDelete}
               onArchiveNote={handleArchiveNote}
               onUnarchiveNote={handleUnarchiveNote}
@@ -536,10 +582,12 @@ export default function Dashboard() {
               onBulkMoveToFolder={handleBulkMoveToFolder}
               onBulkDelete={handleBulkDelete}
               onBulkArchive={handleBulkArchive}
-              onNewNote={viewMode === 'grid' ? (_e: React.MouseEvent) => setShowNewNoteModal(true) : openNewTabAnimated}
+              onNewNote={viewMode === 'list' ? openNewTabAnimated : (_e: React.MouseEvent) => setShowNewNoteModal(true)}
               viewMode={viewMode}
-              onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
+              onToggleView={() => setViewMode(prev => prev === 'grid' ? 'list' : prev === 'list' ? 'infinite' : 'grid')}
               isHidden={false}
+              activeFolderId={activeFolderId}
+              onSelectFolder={setActiveFolderId}
             />
           </div>
 
@@ -585,8 +633,10 @@ export default function Dashboard() {
                   onBulkArchive={handleBulkArchive}
                   onNewNote={(e) => { setShowNewNoteModal(true); setMobileSidebarOpen(false); e.stopPropagation() }}
                   viewMode={viewMode}
-                  onToggleView={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}
+                  onToggleView={() => setViewMode(prev => prev === 'grid' ? 'list' : prev === 'list' ? 'infinite' : 'grid')}
                   isHidden={false}
+                  activeFolderId={activeFolderId}
+                  onSelectFolder={setActiveFolderId}
                 />
                 </div>
               </div>
@@ -630,9 +680,38 @@ export default function Dashboard() {
                 </svg>
                 Tab
               </button>
+              <div className="w-px h-4 bg-gray-200/60 dark:bg-white/10" />
+              <button
+                onClick={() => setViewMode('infinite')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === 'infinite'
+                    ? 'bg-[var(--accent)]/15 text-[var(--accent)]'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="9" />
+                  <ellipse cx="12" cy="12" rx="9" ry="4" />
+                  <line x1="12" y1="3" x2="12" y2="21" />
+                </svg>
+                Infinite
+              </button>
             </div>
           </div>
-          {viewMode === 'grid' ? (
+          {viewMode === 'infinite' ? (
+            <main className="flex-1 overflow-hidden relative">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <InfiniteView
+                  notes={filteredNotes}
+                  onSelectNote={handleGridSelectNote}
+                />
+              )}
+            </main>
+          ) : viewMode === 'grid' ? (
             <main className="flex-1 overflow-hidden">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
@@ -642,6 +721,9 @@ export default function Dashboard() {
                 <GridView
                   notes={filteredNotes}
                   folders={folders}
+                  folderNotes={folderNotes}
+                  activeFolderId={activeFolderId}
+                  onSetActiveFolder={setActiveFolderId}
                   selectedNoteId={currentNote?.id ?? null}
                   searchQuery={searchQuery}
                   gridSelectedIds={gridSelectedIds}
@@ -660,6 +742,10 @@ export default function Dashboard() {
                   onBulkDelete={handleBulkDelete}
                   onBulkArchive={handleBulkArchive}
                   onBulkMoveToFolder={handleBulkMoveToFolder}
+                  onCreateFolder={createFolder}
+                  onRenameFolder={renameFolder}
+                  onDeleteFolder={deleteFolder}
+                  onUpdateFolderColor={updateFolderColor}
                 />
               )}
             </main>

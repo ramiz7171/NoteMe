@@ -29,6 +29,7 @@ import EditorToolbar from './EditorToolbar'
 import CustomSelect from '../shared/CustomSelect'
 import ExpirationPicker from '../Notes/ExpirationPicker'
 import ExpirationBadge from '../Notes/ExpirationBadge'
+import SchedulePicker from '../Notes/SchedulePicker'
 import type { Note, NoteType } from '../../types'
 
 const lowlight = createLowlight(common)
@@ -49,8 +50,8 @@ const NOTE_TYPES: { value: NoteType; label: string }[] = [
 interface Props {
   note: Note | null
   isNew: boolean
-  onSave: (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => Promise<void>
-  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null }) => Promise<{ error: unknown } | undefined>
+  onSave: (title: string, content: string, noteType: NoteType, expiresAt?: string | null, scheduledAt?: string | null) => Promise<void>
+  onUpdate: (id: string, updates: { title?: string; content?: string; note_type?: NoteType; expires_at?: string | null; scheduled_at?: string | null }) => Promise<{ error: unknown } | undefined>
   onDelete: (id: string) => Promise<{ error: unknown } | undefined>
   noTitleIndex: number
   tabTitle?: string
@@ -380,6 +381,18 @@ export default function NoteEditor({ note, isNew, onSave, onUpdate, onDelete: _o
           />
 
           {note?.expires_at && <ExpirationBadge expiresAt={note.expires_at} />}
+
+          <SchedulePicker
+            value={note?.scheduled_at ?? null}
+            noteTitle={note?.title || title}
+            noteContent={note?.content || ''}
+            noteId={note?.id}
+            onChange={(scheduledAt) => {
+              if (!isNew && note) {
+                onUpdate(note.id, { scheduled_at: scheduledAt })
+              }
+            }}
+          />
         </div>
 
         <div className="flex items-center gap-1.5 md:gap-2 shrink-0">

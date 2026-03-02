@@ -161,7 +161,7 @@ export default function GeneralSection({ showToast }: GeneralSectionProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Default View</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{settings.default_view === 'grid' ? 'Grid view' : 'Tab view'}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{settings.default_view === 'grid' ? 'Grid view' : settings.default_view === 'infinite' ? 'Infinite view' : 'Tab view'}</p>
             </div>
             <div className="flex gap-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5">
               <button
@@ -172,6 +172,10 @@ export default function GeneralSection({ showToast }: GeneralSectionProps) {
                 onClick={() => handleSettingsUpdate({ default_view: 'list' })}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${settings.default_view === 'list' ? 'bg-black dark:bg-white text-white dark:text-black' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
               >List</button>
+              <button
+                onClick={() => handleSettingsUpdate({ default_view: 'infinite' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${settings.default_view === 'infinite' ? 'bg-black dark:bg-white text-white dark:text-black' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              >Infinite</button>
             </div>
           </div>
         </div>

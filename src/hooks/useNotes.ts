@@ -100,7 +100,7 @@ export function useNotes(opts?: UseNotesOptions) {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [fetchNotes])
 
-  const createNote = async (title: string, content: string, noteType: NoteType, expiresAt?: string | null) => {
+  const createNote = async (title: string, content: string, noteType: NoteType, expiresAt?: string | null, scheduledAt?: string | null) => {
     if (!user) return { error: new Error('Not authenticated') }
     const contentToSave = opts?.encrypt ? await opts.encrypt(content) : content
     const { data, error } = await supabase.from('notes').insert({
@@ -109,6 +109,7 @@ export function useNotes(opts?: UseNotesOptions) {
       content: contentToSave,
       note_type: noteType,
       ...(expiresAt !== undefined ? { expires_at: expiresAt } : {}),
+      ...(scheduledAt !== undefined ? { scheduled_at: scheduledAt } : {}),
     }).select().single()
     // Optimistically add the new note to state immediately
     if (!error && data) {
@@ -120,7 +121,7 @@ export function useNotes(opts?: UseNotesOptions) {
     return { error, data: data as Note | null }
   }
 
-  const updateNote = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number; expires_at?: string | null }) => {
+  const updateNote = async (id: string, updates: { title?: string; content?: string; note_type?: NoteType; color?: string; position?: number; expires_at?: string | null; scheduled_at?: string | null }) => {
     pendingUpdatesRef.current.add(id)
     // Optimistic update for all fields so the UI reflects changes immediately
     setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates, updated_at: new Date().toISOString() } : n))

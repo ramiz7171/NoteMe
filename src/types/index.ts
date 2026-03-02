@@ -13,6 +13,7 @@ export interface Folder {
   id: string
   user_id: string
   name: string
+  color: string | null
   created_at: string
   updated_at: string
 }
@@ -30,6 +31,7 @@ export interface Note {
   color: string
   position: number
   expires_at: string | null
+  scheduled_at: string | null
   created_at: string
   updated_at: string
 }
@@ -95,7 +97,7 @@ export interface UserSettings {
   ai_tone: 'professional' | 'casual' | 'concise' | 'detailed'
   summary_length: 'short' | 'medium' | 'long'
   notifications: NotificationSettings
-  default_view: 'grid' | 'list'
+  default_view: 'grid' | 'list' | 'infinite'
   preferences: Record<string, unknown>
   created_at: string
   updated_at: string
