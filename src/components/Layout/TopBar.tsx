@@ -48,7 +48,7 @@ export default function TopBar({ onToggleMobileSidebar, showMobileMenuBtn }: Top
             </svg>
           </button>
         )}
-        <Logo className="h-8" />
+        <Logo />
       </div>
 
       <div className="flex items-center gap-1.5 md:gap-3">

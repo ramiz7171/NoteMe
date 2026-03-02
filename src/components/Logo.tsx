@@ -5,7 +5,7 @@ export default function Logo({ className = '' }: { className?: string }) {
     <img
       src={logo}
       alt="Criptnote"
-      className={`object-contain dark:brightness-0 dark:invert ${className}`}
+      className={`h-44 object-contain dark:brightness-0 dark:invert ${className}`}
     />
   )
 }
