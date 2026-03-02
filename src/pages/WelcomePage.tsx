@@ -9,19 +9,21 @@ export default function WelcomePage() {
 
   return (
     <>
-      {/* Ghost cursor background — outside overflow container for correct fixed positioning */}
-      <GhostCursor
-        color="#B19EEF"
-        bloomStrength={0.1}
-        bloomRadius={1.0}
-        bloomThreshold={0.025}
-        brightness={1}
-        mixBlendMode="screen"
-        trailLength={50}
-        inertia={0.5}
-        grainIntensity={0.05}
-        zIndex={1}
-      />
+      {/* Ghost cursor background — desktop only (no mouse on mobile) */}
+      <div className="hidden md:block">
+        <GhostCursor
+          color="#B19EEF"
+          bloomStrength={0.1}
+          bloomRadius={1.0}
+          bloomThreshold={0.025}
+          brightness={1}
+          mixBlendMode="screen"
+          trailLength={50}
+          inertia={0.5}
+          grainIntensity={0.05}
+          zIndex={1}
+        />
+      </div>
 
     <div className="relative h-screen bg-black text-white overflow-hidden flex flex-col">
       {/* Hero section */}
