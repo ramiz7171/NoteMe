@@ -32,7 +32,7 @@ export default function LockScreen() {
     <div className="min-h-screen flex items-center justify-center bg-app-gradient px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Logo className="mx-auto" />
+          <Logo className="h-16 mx-auto" />
           <div className="mt-4 w-16 h-16 mx-auto rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
             <svg className="w-8 h-8 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
