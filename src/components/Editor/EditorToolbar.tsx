@@ -69,9 +69,16 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
       setHasText(editor.state.doc.content.size > 2)
       // No getText() here — let onClick handlers fetch fresh text on demand
     }
+    // 'update' fires on normal user edits
     editor.on('update', handler)
+    // 'transaction' catches setContent with emitUpdate:false (e.g. async initial content load)
+    editor.on('transaction', handler)
+    // Safety net: re-check after NoteEditor's async content load (requestAnimationFrame + emitUpdate:false)
+    const timer = setTimeout(handler, 200)
     return () => {
       editor.off('update', handler)
+      editor.off('transaction', handler)
+      clearTimeout(timer)
       if (textDebounceRef.current) clearTimeout(textDebounceRef.current)
     }
   }, [editor])
