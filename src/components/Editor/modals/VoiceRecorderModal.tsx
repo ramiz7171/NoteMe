@@ -115,7 +115,14 @@ export default function VoiceRecorderModal({ editor, onClose }: VoiceRecorderMod
           ) : (
             <>
               <button
-                onClick={startRecording}
+                onClick={async () => {
+                  try {
+                    await startRecording()
+                  } catch (err: any) {
+                    console.error('[Voice Recorder]', err)
+                    setError(err?.name === 'NotAllowedError' ? 'Microphone access denied — check browser permissions' : `Recording failed: ${err?.message || 'Unknown error'}`)
+                  }
+                }}
                 className="w-14 h-14 rounded-full bg-black dark:bg-white hover:opacity-90 text-white dark:text-black flex items-center justify-center transition-opacity shadow-lg"
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">

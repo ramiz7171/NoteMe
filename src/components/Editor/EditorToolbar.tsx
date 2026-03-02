@@ -9,7 +9,7 @@ import { exportAsDocx } from './export/exportDocx'
 import { exportAsExcel } from './export/exportExcel'
 import { exportAsCsv } from './export/exportCsv'
 import { exportAsTxt } from './export/exportTxt'
-import { summarizeText, fixGrammar, fixCode, getCodeFixUsage, addCodeFixUsage, getDailyUsage, addDailyUsage, AI_LIMITS } from '../../lib/gemini'
+import { summarizeText, fixGrammar, fixCode, getCodeFixUsage, addCodeFixUsage, getDailyUsage, addDailyUsage, AI_LIMITS, AI_KEY_CONFIGURED } from '../../lib/gemini'
 import { useAuth } from '../../context/AuthContext'
 import AIWriterModal from './modals/AIWriterModal'
 import type { NoteType } from '../../types'
@@ -502,11 +502,14 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
         {(() => {
           const sumUsage = user ? getDailyUsage('summarize', user.id, AI_LIMITS.summarize.daily) : { remaining: 0 }
           const noUses = !isAdmin && sumUsage.remaining <= 0
-          const disabled = summarizing || fixingGrammar || fixingCode || !hasText || noUses
+          const busy = summarizing || fixingGrammar || fixingCode
+          const disabled = busy || !hasText || noUses
           return (
             <button
               onClick={async () => {
-                if (!user || disabled) return
+                if (!AI_KEY_CONFIGURED) { setAiError('AI key missing — redeploy with VITE_GEMINI_API_KEY'); setTimeout(() => setAiError(null), 8000); return }
+                if (!user) { setAiError('Not signed in'); setTimeout(() => setAiError(null), 4000); return }
+                if (busy || !hasText || noUses) return
                 const text = editor.getText()
                 const tooLong = !isAdmin && text.length > AI_LIMITS.summarize.maxChars
                 if (tooLong) { setAiError(`Text too long (max ${(AI_LIMITS.summarize.maxChars / 1000).toFixed(0)}k chars)`); setTimeout(() => setAiError(null), 4000); return }
@@ -528,9 +531,9 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
                   setSummarizing(false)
                 }
               }}
-              disabled={disabled}
+              disabled={busy}
               className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${summarizing ? 'opacity-50 cursor-wait' : ''} ${noUses ? 'opacity-40' : ''}`}
-              title={isAdmin ? 'Summarize (unlimited)' : noUses ? 'Daily limit reached (20/day)' : `Summarize (${sumUsage.remaining} left today)`}
+              title={!AI_KEY_CONFIGURED ? 'AI key not configured' : isAdmin ? 'Summarize (unlimited)' : noUses ? 'Daily limit reached (20/day)' : `Summarize (${sumUsage.remaining} left today)`}
             >
               {summarizing ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -550,11 +553,13 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
         {(() => {
           const gramUsage = user ? getDailyUsage('grammar', user.id, AI_LIMITS.grammar.daily) : { remaining: 0 }
           const noUses = !isAdmin && gramUsage.remaining <= 0
-          const disabled = fixingGrammar || summarizing || fixingCode || !hasText || noUses
+          const busy = fixingGrammar || summarizing || fixingCode
           return (
             <button
               onClick={async () => {
-                if (!user || disabled) return
+                if (!AI_KEY_CONFIGURED) { setAiError('AI key missing — redeploy with VITE_GEMINI_API_KEY'); setTimeout(() => setAiError(null), 8000); return }
+                if (!user) { setAiError('Not signed in'); setTimeout(() => setAiError(null), 4000); return }
+                if (busy || !hasText) return
                 // Get fresh text/selection at click time — NOT during render
                 const { from: f, to: t } = editor.state.selection
                 const hasSel = f !== t
@@ -580,9 +585,9 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
                   setFixingGrammar(false)
                 }
               }}
-              disabled={disabled}
-              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingGrammar ? 'opacity-50 cursor-wait' : ''} ${noUses ? 'opacity-40' : ''}`}
-              title={isAdmin ? 'Fix Grammar (unlimited)' : noUses ? 'Daily limit reached (20/day)' : `Fix Grammar (${gramUsage.remaining} left today)`}
+              disabled={busy}
+              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingGrammar ? 'opacity-50 cursor-wait' : ''} ${!hasText ? 'opacity-40' : ''}`}
+              title={!AI_KEY_CONFIGURED ? 'AI key not configured' : isAdmin ? 'Fix Grammar (unlimited)' : noUses ? 'Daily limit reached (20/day)' : `Fix Grammar (${gramUsage.remaining} left today)`}
             >
               {fixingGrammar ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -605,7 +610,9 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
           return (
             <button
               onClick={async () => {
-                if (!user || !hasText || anyBusy) return
+                if (!AI_KEY_CONFIGURED) { setAiError('AI key missing — redeploy with VITE_GEMINI_API_KEY'); setTimeout(() => setAiError(null), 8000); return }
+                if (!user) { setAiError('Not signed in'); setTimeout(() => setAiError(null), 4000); return }
+                if (!hasText || anyBusy) return
                 const freshText = editor.getText()
                 const lineCount = freshText.trim() ? freshText.split('\n').length : 0
                 const overLimit = !isAdmin && lineCount > usage.remaining
@@ -625,9 +632,9 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
                   setFixingCode(false)
                 }
               }}
-              disabled={anyBusy || !hasText}
-              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingCode ? 'opacity-50 cursor-wait' : ''}`}
-              title={isAdmin ? 'Fix Code (unlimited)' : `Fix Code (${usage.remaining} lines remaining today)`}
+              disabled={anyBusy}
+              className={`${btn(false)} flex items-center gap-1 text-xs px-2 font-medium ${fixingCode ? 'opacity-50 cursor-wait' : ''} ${!hasText ? 'opacity-40' : ''}`}
+              title={!AI_KEY_CONFIGURED ? 'AI key not configured' : isAdmin ? 'Fix Code (unlimited)' : `Fix Code (${usage.remaining} lines remaining today)`}
             >
               {fixingCode ? (
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />

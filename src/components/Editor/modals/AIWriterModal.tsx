@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Editor } from '@tiptap/react'
-import { generateEmail, generateMessage, getDailyUsage, addDailyUsage, AI_LIMITS } from '../../../lib/gemini'
+import { generateEmail, generateMessage, getDailyUsage, addDailyUsage, AI_LIMITS, AI_KEY_CONFIGURED } from '../../../lib/gemini'
 import { useAuth } from '../../../context/AuthContext'
 import CustomSelect from '../../shared/CustomSelect'
 
@@ -37,10 +37,12 @@ export default function AIWriterModal({ editor, onClose }: AIWriterModalProps) {
   const noUses = !isAdmin && usage.remaining <= 0
 
   const canGenerate = tab === 'email' ? subject.trim() && context.trim() : context.trim()
-  const disabled = generating || noUses || !canGenerate
+  const disabled = generating
 
   const handleGenerate = async () => {
-    if (!user || disabled) return
+    if (!AI_KEY_CONFIGURED) { setError('AI key missing — redeploy with VITE_GEMINI_API_KEY env var'); return }
+    if (!user) { setError('Not signed in'); return }
+    if (generating || !canGenerate) return
     setGenerating(true)
     setError('')
     setResult('')

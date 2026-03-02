@@ -1,8 +1,10 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
+// Runtime check — this value is baked in at BUILD time by Vite
+export const AI_KEY_CONFIGURED = !!GEMINI_API_KEY
 if (!GEMINI_API_KEY) {
-  console.warn('[CriptNote AI] VITE_GEMINI_API_KEY is not set — AI features will not work')
+  console.warn('[CriptNote AI] VITE_GEMINI_API_KEY is not set — AI features will not work. Was the env var set during the Vercel build?')
 }
 
 async function callGemini(prompt: string): Promise<string> {
