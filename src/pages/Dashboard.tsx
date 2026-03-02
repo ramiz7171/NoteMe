@@ -600,8 +600,8 @@ export default function Dashboard() {
               />
               <div className="absolute inset-y-0 left-0 w-[65vw] max-w-[260px] animate-[slideDrawerIn_0.25s_ease-out] bg-white dark:bg-[#1a1a1a] flex flex-col">
                 {/* Logo at top of drawer */}
-                <div className="flex items-center justify-center py-1.5 shrink-0 border-b border-gray-200/50 dark:border-white/5">
-                  <Logo className="h-8" />
+                <div className="flex items-center justify-center py-1 shrink-0 border-b border-gray-200/50 dark:border-white/5">
+                  <Logo className="h-7" />
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden">
                 <Sidebar
