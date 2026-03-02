@@ -520,9 +520,10 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
                   ]).run()
                   if (!isAdmin) addDailyUsage('summarize', user.id, 1)
                 } catch (err: any) {
+                  console.error('[AI Summarize]', err)
                   const msg = err?.message || ''
-                  setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : 'Summarize failed')
-                  setTimeout(() => setAiError(null), 4000)
+                  setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : msg.includes('API key') ? msg : 'Summarize failed')
+                  setTimeout(() => setAiError(null), 6000)
                 } finally {
                   setSummarizing(false)
                 }
@@ -571,9 +572,10 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
                   }
                   if (!isAdmin) addDailyUsage('grammar', user.id, 1)
                 } catch (err: any) {
+                  console.error('[AI Grammar]', err)
                   const msg = err?.message || ''
-                  setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : 'Grammar fix failed')
-                  setTimeout(() => setAiError(null), 4000)
+                  setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : msg.includes('API key') ? msg : 'Grammar fix failed')
+                  setTimeout(() => setAiError(null), 6000)
                 } finally {
                   setFixingGrammar(false)
                 }
@@ -615,9 +617,10 @@ function EditorToolbarInner({ editor, title, noteType }: EditorToolbarProps) {
                   editor.commands.setContent(fixed)
                   if (!isAdmin) addCodeFixUsage(user.id, lineCount)
                 } catch (err: any) {
+                  console.error('[AI CodeFix]', err)
                   const msg = err?.message || ''
-                  setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : 'Code fix failed')
-                  setTimeout(() => setAiError(null), 4000)
+                  setAiError(msg.includes('429') || msg.includes('uota') ? 'Rate limit — try again later' : msg.includes('API key') ? msg : 'Code fix failed')
+                  setTimeout(() => setAiError(null), 6000)
                 } finally {
                   setFixingCode(false)
                 }

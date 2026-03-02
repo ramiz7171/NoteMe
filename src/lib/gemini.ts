@@ -1,7 +1,15 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
+if (!GEMINI_API_KEY) {
+  console.warn('[CriptNote AI] VITE_GEMINI_API_KEY is not set — AI features will not work')
+}
+
 async function callGemini(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    throw new Error('AI API key is not configured. Check environment variables.')
+  }
+  console.log('[CriptNote AI] Calling Gemini API...')
   const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
